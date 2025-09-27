@@ -8,9 +8,10 @@ import * as THREE from 'three';
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { CameraTracker, CameraDisplay } from "./CameraInfo";
+import { AutoObjectSpawner } from "./AutoObjectSpawner";
+import { ArrowKeyUI } from "./ArrowKeyUI";
 import { HorizontalOrbitCamera, VerticalOrbitCamera } from "./CameraScript";
 import { HorizontalCameraKeyboardController, VerticalCameraKeyboardController } from "./EventHandlers";
-import { ArrowKeyUI } from "./ArrowKeyUI"; 
 
 //アスペクト比2:1正距円筒図法
 const EARTH_TEXTURE_PATH = '/textures/earth_map.avif';
@@ -57,10 +58,7 @@ export default function GameScene() {
   const [hasMounted, setHasMounted] = useState(false);
   const controlsRef = useRef<OrbitControlsImpl>(null!);
 
-  // 1. 回転モードを管理するStateを追加 (デフォルトは 'horizontal')
   const [rotationMode, setRotationMode] = useState<'horizontal' | 'vertical'>('horizontal');
-
-  // カメラの目標Y座標を管理するState (横回転モードでのみ使用)
   const [targetCameraY, setTargetCameraY] = useState(1);
   const [targetCameraX, setTargetCameraX] = useState(1);
 
@@ -68,7 +66,6 @@ export default function GameScene() {
     setHasMounted(true);
   }, []);
 
-  // 2. モードを切り替えるための関数
   const toggleRotationMode = () => {
     setRotationMode(prevMode => (prevMode === 'horizontal' ? 'vertical' : 'horizontal'));
   };
@@ -77,20 +74,18 @@ export default function GameScene() {
     <div style={{ width: '100vw', height: '100vh', position: 'relative', backgroundColor: '#111827' }}>
       
       {/* --- UI --- */}
-      {/* 3. 回転モードを切り替えるボタンを追加 */}
       <div style={{ position: 'absolute', top: '20px', left: '20px', zIndex: 10 }}>
         <button onClick={toggleRotationMode} style={{ padding: '8px 12px', cursor: 'pointer' }}>
           Switch: {rotationMode === 'horizontal' ? 'Horizontal' : 'Vertical'}
         </button>
       </div>
-
-       <ArrowKeyUI mode={rotationMode} />
-
+      
+      <ArrowKeyUI mode={rotationMode} />
+      
       {/* キーボード操作のイベントハンドラ */}
       {rotationMode === 'horizontal' && (
         <VerticalCameraKeyboardController setTargetY={setTargetCameraY} step={0.5} />
-      )}
-
+      )} 
       {rotationMode === 'vertical' && (
         <HorizontalCameraKeyboardController setTargetX={setTargetCameraX} step={0.1} />
       )}
@@ -99,7 +94,6 @@ export default function GameScene() {
       <ErrorBoundary>
         <Canvas 
           camera={{ position: [0, 1, 4], fov: 50 }}
-          // keyプロパティを使ってモード変更時にカメラをリセット
           key={rotationMode} 
         >
           <ambientLight intensity={1.5} /> 
@@ -110,12 +104,14 @@ export default function GameScene() {
           </Suspense>
           
           <OrbitControls 
+            //ref={controlsRef}
             enabled={rotationMode === 'horizontal'}
             enableDamping 
             target={[0, 0, 0]}
           />
 
-          {/* 4. Stateの値に応じて、描画するカメラコンポーネントを切り替える */}
+          <AutoObjectSpawner />
+
           {rotationMode === 'horizontal' ? (
             <HorizontalOrbitCamera 
               radius={4} 
