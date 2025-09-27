@@ -102,7 +102,7 @@ export default function GameScene() {
           </Suspense>
           
           <OrbitControls 
-            ref={controlsRef}
+            enabled={rotationMode === 'horizontal'}
             enableDamping 
             target={[0, 0, 0]}
           />

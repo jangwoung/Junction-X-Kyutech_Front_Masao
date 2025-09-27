@@ -47,25 +47,26 @@ interface VerticalOrbitCameraProps {
 export function VerticalOrbitCamera({ radius, speed, controlsRef }: VerticalOrbitCameraProps) {
   const groupRef = useRef<THREE.Group>(null!);
 
-  // useFrameのロジックは、groupを回転させるだけでOK
+  const rotationAxis = new THREE.Vector3(1, 0, 0); // 回転軸はX軸
+  const targetQuaternion = new THREE.Quaternion();
+
   useFrame((state) => {
     if (groupRef.current) {
-      // コンテナ(group)自体をX軸周りに回転させる
-      groupRef.current.rotation.x = state.clock.getElapsedTime() * speed;
+      const angle = state.clock.getElapsedTime() * speed;
+      targetQuaternion.setFromAxisAngle(rotationAxis, angle);
+      groupRef.current.quaternion.slerp(targetQuaternion, 0.05);
 
-      // OrbitControlsの状態を更新
       if (controlsRef.current) {
         controlsRef.current.update();
       }
     }
   });
 
-  // 以前は空だったgroupの中に、カメラを直接配置する
   return (
     <group ref={groupRef}>
       <PerspectiveCamera 
-        makeDefault // このカメラをシーンのメインカメラとして使用する
-        position={[0, 0, radius]} // コンテナの中心からZ軸方向に離れた位置に配置
+        makeDefault
+        position={[0, 0, radius]}
       />
     </group>
   );
