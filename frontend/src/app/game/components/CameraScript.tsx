@@ -24,7 +24,11 @@ export function HorizontalOrbitCamera({ radius, speed, targetY, controlsRef }: H
     camera.position.x = Math.cos(time * speed) * radius;
     camera.position.z = Math.sin(time * speed) * radius;
     
-    camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetY, 0.05);
+    camera.position.y = THREE.MathUtils.lerp(
+      camera.position.y,
+      targetY,
+      //目標地点への追従速度(ぬるっと移動)
+      0.005);
     
     camera.lookAt(targetLookAt);
 
@@ -60,7 +64,8 @@ export function VerticalOrbitCamera({ radius, speed, targetX, controlsRef }: Ver
       groupRef.current.position.x = THREE.MathUtils.lerp(
         groupRef.current.position.x,
         targetX,
-        0.05
+        //目標地点への追従速度(ぬるっと移動)
+        0.003
       );
 
       if (controlsRef.current) {

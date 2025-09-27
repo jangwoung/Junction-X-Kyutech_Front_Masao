@@ -7,7 +7,7 @@ interface VerticalCameraKeyboardControllerProps {
   step?: number;
 }
 
-export function VerticalCameraKeyboardController({ setTargetY, step = 1.0 }: VerticalCameraKeyboardControllerProps) {
+export function VerticalCameraKeyboardController({ setTargetY, /*1回のキー入力で動く距離*/ step = 0.1 }: VerticalCameraKeyboardControllerProps) {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -34,7 +34,7 @@ interface HorizontalCameraKeyboardControllerProps {
   step?: number;
 }
 
-export function HorizontalCameraKeyboardController({ setTargetX, step = 1.0 }: HorizontalCameraKeyboardControllerProps) {
+export function HorizontalCameraKeyboardController({ setTargetX, /*1回のキー入力で動く距離*/ step = 0.1 }: HorizontalCameraKeyboardControllerProps) {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'ArrowRight') {

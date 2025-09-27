@@ -10,6 +10,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { CameraTracker, CameraDisplay } from "./CameraInfo";
 import { HorizontalOrbitCamera, VerticalOrbitCamera } from "./CameraScript";
 import { HorizontalCameraKeyboardController, VerticalCameraKeyboardController } from "./EventHandlers";
+import { ArrowKeyUI } from "./ArrowKeyUI"; 
 
 //アスペクト比2:1正距円筒図法
 const EARTH_TEXTURE_PATH = '/textures/earth_map.avif';
@@ -79,9 +80,11 @@ export default function GameScene() {
       {/* 3. 回転モードを切り替えるボタンを追加 */}
       <div style={{ position: 'absolute', top: '20px', left: '20px', zIndex: 10 }}>
         <button onClick={toggleRotationMode} style={{ padding: '8px 12px', cursor: 'pointer' }}>
-          切り替え: {rotationMode === 'horizontal' ? '横回転中' : '縦回転中'}
+          Switch: {rotationMode === 'horizontal' ? 'Horizontal' : 'Vertical'}
         </button>
       </div>
+
+       <ArrowKeyUI mode={rotationMode} />
 
       {/* キーボード操作のイベントハンドラ */}
       {rotationMode === 'horizontal' && (
@@ -89,7 +92,7 @@ export default function GameScene() {
       )}
 
       {rotationMode === 'vertical' && (
-        <HorizontalCameraKeyboardController setTargetX={setTargetCameraX} step={0.5} />
+        <HorizontalCameraKeyboardController setTargetX={setTargetCameraX} step={0.1} />
       )}
 
       {/* --- 3D Scene --- */}
