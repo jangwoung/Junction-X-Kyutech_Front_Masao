@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-type Vector3 = { x: number; y: number; z: number };
+export type Vector3 = { x: number; y: number; z: number };
 
 export type OrbitResponse = {
   satellite_id: string;

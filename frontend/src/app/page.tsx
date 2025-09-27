@@ -5,10 +5,10 @@ export default function Home() {
     <div className="min-h-screen w-full">
       <div className="p-4">
         <a
-          href="/backend-test"
+          href="/home"
           className="inline-block rounded bg-indigo-600 px-3 py-2 text-white"
         >
-          バックエンド動作確認ページへ
+          Home
         </a>
       </div>
 
