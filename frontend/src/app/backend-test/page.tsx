@@ -219,6 +219,22 @@ export default function BackendTestPage() {
             GET /api/v1/mission/debris/:id/threats
           </button>
         </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            className="px-3 py-2 rounded bg-green-600 text-white disabled:opacity-50"
+            onClick={() => request("/api/v1/mission/debris/list")}
+            disabled={loading}
+          >
+            GET /api/v1/mission/debris/list
+          </button>
+          <button
+            className="px-3 py-2 rounded bg-green-600 text-white disabled:opacity-50"
+            onClick={() => request("/api/v1/mission/debris/stats")}
+            disabled={loading}
+          >
+            GET /api/v1/mission/debris/stats
+          </button>
+        </div>
       </section>
 
       <section className="space-y-2">
