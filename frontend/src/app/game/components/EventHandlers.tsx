@@ -2,17 +2,12 @@
 
 import { useEffect } from "react";
 
-interface CameraKeyboardControllerProps {
+interface VerticalCameraKeyboardControllerProps {
   setTargetY: React.Dispatch<React.SetStateAction<number>>;
   step?: number;
 }
 
-/**
- * カメラのY座標をキーボードの上下矢印で制御するイベントハンドラコンポーネント
- * @param setTargetY - 親のStateを更新するセッター関数
- * @param step - 1回のキープレスでの移動量（デフォルトは1.0）
- */
-export function CameraKeyboardController({ setTargetY, step = 1.0 }: CameraKeyboardControllerProps) {
+export function VerticalCameraKeyboardController({ setTargetY, step = 1.0 }: VerticalCameraKeyboardControllerProps) {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -29,6 +24,28 @@ export function CameraKeyboardController({ setTargetY, step = 1.0 }: CameraKeybo
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [setTargetY, step]);
+
+  return null;
+}
+
+
+interface HorizontalCameraKeyboardControllerProps {
+  setTargetX: React.Dispatch<React.SetStateAction<number>>;
+  step?: number;
+}
+
+export function HorizontalCameraKeyboardController({ setTargetX, step = 1.0 }: HorizontalCameraKeyboardControllerProps) {
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'ArrowRight') {
+        setTargetX(x => x + step);
+      } else if (event.key === 'ArrowLeft') {
+        setTargetX(x => x - step);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [setTargetX, step]);
 
   return null;
 }

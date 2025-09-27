@@ -9,7 +9,7 @@ import * as THREE from 'three';
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { CameraTracker, CameraDisplay } from "./CameraInfo";
 import { HorizontalOrbitCamera, VerticalOrbitCamera } from "./CameraScript";
-import { CameraKeyboardController } from "./EventHandlers";
+import { HorizontalCameraKeyboardController, VerticalCameraKeyboardController } from "./EventHandlers";
 
 //アスペクト比2:1正距円筒図法
 const EARTH_TEXTURE_PATH = '/textures/earth_map.avif';
@@ -61,6 +61,7 @@ export default function GameScene() {
 
   // カメラの目標Y座標を管理するState (横回転モードでのみ使用)
   const [targetCameraY, setTargetCameraY] = useState(1);
+  const [targetCameraX, setTargetCameraX] = useState(1);
 
   useEffect(() => {
     setHasMounted(true);
@@ -82,9 +83,13 @@ export default function GameScene() {
         </button>
       </div>
 
-      {/* 横回転モードの時のみ、キーボード操作のイベントハンドラを有効にする */}
+      {/* キーボード操作のイベントハンドラ */}
       {rotationMode === 'horizontal' && (
-        <CameraKeyboardController setTargetY={setTargetCameraY} step={0.5} />
+        <VerticalCameraKeyboardController setTargetY={setTargetCameraY} step={0.5} />
+      )}
+
+      {rotationMode === 'vertical' && (
+        <HorizontalCameraKeyboardController setTargetX={setTargetCameraX} step={0.5} />
       )}
 
       {/* --- 3D Scene --- */}
@@ -119,6 +124,7 @@ export default function GameScene() {
             <VerticalOrbitCamera
               radius={5}
               speed={0.3}
+              targetX={targetCameraX}
               controlsRef={controlsRef}
             />
           )}

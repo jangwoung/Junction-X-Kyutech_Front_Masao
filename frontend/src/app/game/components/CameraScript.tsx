@@ -40,11 +40,12 @@ export function HorizontalOrbitCamera({ radius, speed, targetY, controlsRef }: H
 interface VerticalOrbitCameraProps {
   radius: number;
   speed: number;
+  targetX: number;
   controlsRef: React.RefObject<OrbitControlsImpl>;
 }
 
 // 縦回転カメラ
-export function VerticalOrbitCamera({ radius, speed, controlsRef }: VerticalOrbitCameraProps) {
+export function VerticalOrbitCamera({ radius, speed, targetX, controlsRef }: VerticalOrbitCameraProps) {
   const groupRef = useRef<THREE.Group>(null!);
 
   const rotationAxis = new THREE.Vector3(1, 0, 0); // 回転軸はX軸
@@ -56,6 +57,12 @@ export function VerticalOrbitCamera({ radius, speed, controlsRef }: VerticalOrbi
       targetQuaternion.setFromAxisAngle(rotationAxis, angle);
       groupRef.current.quaternion.slerp(targetQuaternion, 0.05);
 
+      groupRef.current.position.x = THREE.MathUtils.lerp(
+        groupRef.current.position.x,
+        targetX,
+        0.05
+      );
+
       if (controlsRef.current) {
         controlsRef.current.update();
       }
@@ -66,7 +73,7 @@ export function VerticalOrbitCamera({ radius, speed, controlsRef }: VerticalOrbi
     <group ref={groupRef}>
       <PerspectiveCamera 
         makeDefault
-        position={[0, 0, radius]}
+        position={[targetX, 0, radius]}
       />
     </group>
   );
