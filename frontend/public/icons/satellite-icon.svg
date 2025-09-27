@@ -1,0 +1,47 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="satelliteGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e40af;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="earthGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#047857;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="512" height="512" fill="#111827"/>
+  
+  <!-- Earth -->
+  <circle cx="256" cy="256" r="120" fill="url(#earthGradient)"/>
+  <circle cx="240" cy="240" r="20" fill="#ffffff" opacity="0.3"/>
+  <circle cx="280" cy="220" r="8" fill="#ffffff" opacity="0.2"/>
+  <circle cx="220" cy="280" r="12" fill="#ffffff" opacity="0.25"/>
+  
+  <!-- Satellite body -->
+  <rect x="350" y="200" width="60" height="30" rx="5" fill="url(#satelliteGradient)"/>
+  
+  <!-- Solar panels -->
+  <rect x="320" y="190" width="20" height="50" rx="3" fill="#f59e0b"/>
+  <rect x="420" y="190" width="20" height="50" rx="3" fill="#f59e0b"/>
+  
+  <!-- Antenna -->
+  <line x1="380" y1="200" x2="380" y2="180" stroke="#ffffff" stroke-width="3"/>
+  <circle cx="380" cy="175" r="3" fill="#ffffff"/>
+  
+  <!-- Orbit path -->
+  <ellipse cx="256" cy="256" rx="180" ry="180" fill="none" stroke="#6b7280" stroke-width="2" opacity="0.3"/>
+  
+  <!-- Debris particles -->
+  <circle cx="100" cy="150" r="3" fill="#ef4444" opacity="0.7"/>
+  <circle cx="400" cy="100" r="2" fill="#f97316" opacity="0.6"/>
+  <circle cx="80" cy="350" r="2" fill="#eab308" opacity="0.5"/>
+  <circle cx="450" cy="400" r="3" fill="#ef4444" opacity="0.7"/>
+  
+  <!-- Stars -->
+  <circle cx="50" cy="50" r="1" fill="#ffffff" opacity="0.8"/>
+  <circle cx="450" cy="80" r="1" fill="#ffffff" opacity="0.6"/>
+  <circle cx="80" cy="450" r="1" fill="#ffffff" opacity="0.7"/>
+  <circle cx="480" cy="450" r="1" fill="#ffffff" opacity="0.5"/>
+</svg>

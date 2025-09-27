@@ -3,31 +3,37 @@
 import React, { Suspense, useRef, useState, useEffect } from "react";
 import { Canvas, useLoader, useFrame } from "@react-three/fiber";
 import { OrbitControls, Html } from "@react-three/drei";
-import type { OrbitControls as OrbitControlsImpl } from 'stdlib';
-import * as THREE from 'three';
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
+import * as THREE from "three";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { CameraTracker, CameraDisplay } from "./CameraInfo";
 import { AutoObjectSpawner } from "./AutoObjectSpawner";
 import { ArrowKeyUI } from "./ArrowKeyUI";
 import { HorizontalOrbitCamera, VerticalOrbitCamera } from "./CameraScript";
-import { HorizontalCameraKeyboardController, VerticalCameraKeyboardController } from "./EventHandlers";
+import {
+  HorizontalCameraKeyboardController,
+  VerticalCameraKeyboardController,
+} from "./EventHandlers";
 
 //アスペクト比2:1正距円筒図法
-const EARTH_TEXTURE_PATH = '/textures/earth_map.avif';
-const EARTH_BUMP_PATH = '/textures/earth_bump.jpg';
+const EARTH_TEXTURE_PATH = "/textures/earth_map.avif";
+const EARTH_BUMP_PATH = "/textures/earth_bump.jpg";
 
 function Loader() {
   return (
     <Html center>
-      <div style={{ color: 'white' }}>Loading textures...</div>
+      <div style={{ color: "white" }}>Loading textures...</div>
     </Html>
   );
 }
 
 function Earth() {
   const earthRef = useRef<THREE.Mesh>(null!);
-  const [colorMap, bumpMap] = useLoader(THREE.TextureLoader, [EARTH_TEXTURE_PATH, EARTH_BUMP_PATH]);
+  const [colorMap, bumpMap] = useLoader(THREE.TextureLoader, [
+    EARTH_TEXTURE_PATH,
+    EARTH_BUMP_PATH,
+  ]);
 
   colorMap.wrapS = THREE.RepeatWrapping;
   colorMap.wrapT = THREE.ClampToEdgeWrapping;
@@ -43,11 +49,7 @@ function Earth() {
   return (
     <mesh ref={earthRef}>
       <sphereGeometry args={[1.5, 64, 64]} />
-      <meshStandardMaterial
-        map={colorMap}
-        bumpMap={bumpMap}
-        bumpScale={0.05}
-      />
+      <meshStandardMaterial map={colorMap} bumpMap={bumpMap} bumpScale={0.05} />
     </mesh>
   );
 }
@@ -67,39 +69,60 @@ export default function GameScene() {
   }, []);
 
   const toggleRotationMode = () => {
-    setRotationMode(prevMode => (prevMode === 'horizontal' ? 'vertical' : 'horizontal'));
+    setRotationMode((prevMode) =>
+      prevMode === "horizontal" ? "vertical" : "horizontal"
+    );
   };
 
   return (
-    <div style={{ width: '100vw', height: '100vh', position: 'relative', backgroundColor: '#111827' }}>
-      
+    <div
+      style={{
+        width: "100vw",
+        height: "100vh",
+        position: "relative",
+        backgroundColor: "#111827",
+      }}
+    >
       {/* --- UI --- */}
-      <div style={{ position: 'absolute', top: '20px', left: '20px', zIndex: 10 }}>
-        <button onClick={toggleRotationMode} style={{ padding: '8px 12px', cursor: 'pointer' }}>
-          Switch: {rotationMode === 'horizontal' ? 'Horizontal' : 'Vertical'}
+      {/* 3. 回転モードを切り替えるボタンを追加 */}
+      <div
+        style={{ position: "absolute", top: "20px", left: "20px", zIndex: 10 }}
+      >
+        <button
+          onClick={toggleRotationMode}
+          style={{ padding: "8px 12px", cursor: "pointer" }}
+        >
+          Switch: {rotationMode === "horizontal" ? "Horizontal" : "Vertical"}
         </button>
       </div>
-      
+
       <ArrowKeyUI mode={rotationMode} />
-      
+
       {/* キーボード操作のイベントハンドラ */}
-      {rotationMode === 'horizontal' && (
-        <VerticalCameraKeyboardController setTargetY={setTargetCameraY} step={0.5} />
-      )} 
-      {rotationMode === 'vertical' && (
-        <HorizontalCameraKeyboardController setTargetX={setTargetCameraX} step={0.1} />
+      {rotationMode === "horizontal" && (
+        <VerticalCameraKeyboardController
+          setTargetY={setTargetCameraY}
+          step={0.5}
+        />
+      )}
+
+      {rotationMode === "vertical" && (
+        <HorizontalCameraKeyboardController
+          setTargetX={setTargetCameraX}
+          step={0.1}
+        />
       )}
 
       {/* --- 3D Scene --- */}
       <ErrorBoundary>
-        <Canvas 
+        <Canvas
           camera={{ position: [0, 1, 4], fov: 50 }}
           key={rotationMode} 
         >
-          <ambientLight intensity={1.5} /> 
-          <directionalLight position={[5, 5, 5]} intensity={1.5} /> 
-          
-          <Suspense fallback={<Loader />}> 
+          <ambientLight intensity={1.5} />
+          <directionalLight position={[5, 5, 5]} intensity={1.5} />
+
+          <Suspense fallback={<Loader />}>
             <Earth />
           </Suspense>
           
@@ -131,7 +154,7 @@ export default function GameScene() {
           <CameraTracker setPosition={setCamPos} setRotation={setCamRot} />
         </Canvas>
       </ErrorBoundary>
-      
+
       {hasMounted && <CameraDisplay position={camPos} rotation={camRot} />}
     </div>
   );

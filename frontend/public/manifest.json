@@ -1,0 +1,98 @@
+{
+  "name": "Satellite Game - Junction X Kyutech 2025",
+  "short_name": "Satellite Game",
+  "description": "地球軌道シミュレーター - 衛星とデブリの監視システム",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#1f2937",
+  "orientation": "landscape-primary",
+  "scope": "/",
+  "lang": "ja",
+  "categories": ["education", "simulation", "space"],
+  "icons": [
+    {
+      "src": "/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/desktop-screenshot.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "地球軌道シミュレーターのメイン画面"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "衛星監視",
+      "short_name": "衛星",
+      "description": "衛星の軌道とステータスを監視",
+      "url": "/satellite",
+      "icons": [
+        {
+          "src": "/icons/satellite-shortcut.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "デブリ監視",
+      "short_name": "デブリ",
+      "description": "宇宙デブリの脅威を監視",
+      "url": "/debris",
+      "icons": [
+        {
+          "src": "/icons/debris-shortcut.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}
