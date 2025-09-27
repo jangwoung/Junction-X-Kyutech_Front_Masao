@@ -7,7 +7,6 @@ import { DebrisAppearance } from "./types";
 
 interface AnimatedDebrisProps {
   initialPosition: readonly [number, number, number];
-  velocity: readonly [number, number, number];
   appearance: DebrisAppearance;
   dangerLevel: number;
   collisionProbability?: number;
@@ -17,7 +16,6 @@ interface AnimatedDebrisProps {
 // アニメーション付きデブリコンポーネント（軌道運動対応）
 export function AnimatedDebris({
   initialPosition,
-  velocity,
   appearance,
   dangerLevel,
   collisionProbability,

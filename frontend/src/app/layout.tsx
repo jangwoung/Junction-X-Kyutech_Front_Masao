@@ -18,7 +18,8 @@ export const metadata: Metadata = {
   description: "地球軌道シミュレーター - 衛星とデブリの監視システム",
   manifest: "/manifest.json",
   themeColor: "#1f2937",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
+  viewport:
+    "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

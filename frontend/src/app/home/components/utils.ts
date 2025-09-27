@@ -10,9 +10,14 @@ export function hasValidPosition(
   return !!(
     d &&
     d.position &&
-    isFiniteNumber((d.position as any).x) &&
-    isFiniteNumber((d.position as any).y) &&
-    isFiniteNumber((d.position as any).z)
+    typeof d.position === 'object' &&
+    d.position !== null &&
+    'x' in d.position &&
+    'y' in d.position &&
+    'z' in d.position &&
+    isFiniteNumber(d.position.x) &&
+    isFiniteNumber(d.position.y) &&
+    isFiniteNumber(d.position.z)
   );
 }
 

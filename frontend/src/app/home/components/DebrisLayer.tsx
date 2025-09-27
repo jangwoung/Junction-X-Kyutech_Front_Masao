@@ -226,7 +226,6 @@ export function DebrisLayer({ missionId = "demo" }: DebrisLayerProps) {
                 <AnimatedDebris
                   key={`${data.debris.id}-${idx}`}
                   initialPosition={data.position}
-                  velocity={data.velocity}
                   appearance={appearance}
                   dangerLevel={data.debris.danger_level}
                   collisionProbability={data.debris.collision_probability}
