@@ -38,9 +38,9 @@ export function HorizontalCameraKeyboardController({ setTargetX, /*1回のキー
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'ArrowRight') {
-        setTargetX(x => x + step);
-      } else if (event.key === 'ArrowLeft') {
         setTargetX(x => x - step);
+      } else if (event.key === 'ArrowLeft') {
+        setTargetX(x => x + step);
       }
     };
     window.addEventListener('keydown', handleKeyDown);

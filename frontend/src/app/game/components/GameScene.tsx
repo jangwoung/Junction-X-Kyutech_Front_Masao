@@ -148,7 +148,7 @@ export default function GameScene() {
             />
           ) : (
             <VerticalOrbitCamera
-              radius={5}
+              radius={4}
               speed={0.1}
               targetX={targetCameraX}
               controlsRef={controlsRef}
