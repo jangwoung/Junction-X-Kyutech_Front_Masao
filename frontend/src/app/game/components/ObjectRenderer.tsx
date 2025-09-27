@@ -1,18 +1,20 @@
 "use client";
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { useLoader, useFrame } from '@react-three/fiber';
-import { useRef } from 'react';
 import * as THREE from 'three';
 
+// オブジェクトの型定義を更新
+type RenderableObject = {
+  id: number;
+  position: [number, number, number];
+  color: THREE.Color;
+  size: number;
+  imagePath: string;
+};
+
 interface ObjectRendererProps {
-  objects: Array<{
-    id: number;
-    position: [number, number, number];
-    color: THREE.Color;
-    size: number;
-    imagePath: string;
-  }>;
+  objects: RenderableObject[];
 }
 
 export function ObjectRenderer({ objects }: ObjectRendererProps) {
@@ -20,43 +22,47 @@ export function ObjectRenderer({ objects }: ObjectRendererProps) {
     <>
       {objects.map((obj) => (
         <FloatingObject
-            key={obj.id}
-            position={obj.position}
-            color={obj.color}
-            size={obj.size} 
-            imagePath={obj.imagePath}/>
+          key={obj.id}
+          position={obj.position}
+          color={obj.color}
+          size={obj.size}
+          imagePath={obj.imagePath}
+        />
       ))}
     </>
   );
 }
 
-interface FloatingObjectProps {
+
+type FloatingObjectProps = {
   position: [number, number, number];
   color: THREE.Color;
   size: number;
   imagePath: string;
-}
+};
 
-function FloatingObject({ position, color, size, imagePath }: FloatingObjectProps) { 
-    // propsで渡されたimagePathを使ってテクスチャを読み込む
-  const texture = useLoader(THREE.TextureLoader, imagePath); 
+//　位置をpropsで受け取り、カメラを向く
+function FloatingObject({ position, color, size, imagePath }: FloatingObjectProps) {
+  const texture = useLoader(THREE.TextureLoader, imagePath);
   const meshRef = useRef<THREE.Mesh>(null!);
 
+  // オブジェクトをカメラに向ける
   useFrame((state) => {
     if (meshRef.current) {
       meshRef.current.lookAt(state.camera.position);
     }
   });
 
-    return (
-    <mesh position={position}>
-      <planeGeometry args={[size, size]} /> 
-      <meshStandardMaterial 
-        map={texture}          // mapプロパティにテクスチャを指定
-        transparent={true}     // 透明部分を有効にするために必須
-        side={THREE.DoubleSide} // 両面表示
-        color={color}          // もとの色で画像を薄く着色することも可能
-        roughness={0.5} 
+  return (
+    // Spawnerから渡されたpositionを直接メッシュに設定
+    <mesh ref={meshRef} position={position}>
+      <planeGeometry args={[size, size]} />
+      <meshStandardMaterial
+        map={texture}
+        transparent={true}
+        side={THREE.DoubleSide} // 裏側が消えないように両面描画
+        color={color}
+        roughness={0.5}
       />
     </mesh>
   );
