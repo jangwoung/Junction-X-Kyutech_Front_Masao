@@ -285,7 +285,7 @@ export default function SatellitePanel() {
       {!debrisLoading && debris.length > 0 && (
         <>
           <div className="flex items-center">
-            <span className="text-xs text-gray-300">デブリ衝突確率</span>
+            <span className="text-xs text-gray-300">Debris Collision Risk</span>
             <span className="mx-1 text-gray-500">|</span>
             <span className="font-mono">
               {" "}
@@ -297,7 +297,7 @@ export default function SatellitePanel() {
             </span>
           </div>
           <div className="flex items-center">
-            <span className="text-xs text-gray-300">1時間以内接近</span>
+            <span className="text-xs text-gray-300">Close Approach 1h</span>
             <span className="mx-1 text-gray-500">|</span>
             <span className="font-mono">
               {" "}
@@ -305,7 +305,6 @@ export default function SatellitePanel() {
                 debris.filter((d) => (d.time_to_closest ?? Infinity) < 3600000)
                   .length
               }
-              個
             </span>
           </div>
         </>

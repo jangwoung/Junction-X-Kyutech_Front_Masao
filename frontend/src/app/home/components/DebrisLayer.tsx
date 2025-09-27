@@ -237,7 +237,6 @@ export function DebrisLayer({ missionId = "demo" }: DebrisLayerProps) {
           </group>
         );
       })}
-
     </group>
   );
 }

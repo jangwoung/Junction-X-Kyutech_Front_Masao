@@ -44,14 +44,7 @@ export default function HomeScene() {
           fontFamily: "sans-serif",
           pointerEvents: "none",
         }}
-      >
-        <div style={{ fontWeight: "bold", marginBottom: "4px" }}>
-          地球軌道シミュレーター
-        </div>
-        <div style={{ fontSize: "12px", opacity: 0.8 }}>
-          Drag to rotate, scroll to zoom
-        </div>
-      </div>
+      ></div>
     </div>
   );
 }
