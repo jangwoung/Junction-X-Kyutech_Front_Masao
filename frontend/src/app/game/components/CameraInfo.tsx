@@ -3,7 +3,14 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from 'three';
 
-export function CameraTracker({ setPosition, setRotation }) {
+// add typed props
+type SetState<T> = (updater: (prev: T) => T) => void;
+export type CameraTrackerProps = {
+  setPosition: SetState<THREE.Vector3>;
+  setRotation: SetState<THREE.Euler>;
+};
+
+export function CameraTracker({ setPosition, setRotation }: CameraTrackerProps) {
   const { camera } = useThree();
   useFrame(() => {
     const posArray = camera.position.clone().toArray().map(v => parseFloat(v.toFixed(2)));
@@ -26,8 +33,13 @@ export function CameraTracker({ setPosition, setRotation }) {
   return null;
 }
 
-export function CameraDisplay({ position, rotation }) {
-  const toDegrees = (rad) => (rad * 180 / Math.PI).toFixed(1);
+export type CameraDisplayProps = {
+  position: THREE.Vector3;
+  rotation: THREE.Euler;
+};
+
+export function CameraDisplay({ position, rotation }: CameraDisplayProps) {
+  const toDegrees = (rad: number) => (rad * 180 / Math.PI).toFixed(1);
 
   return (
     <div style={{
