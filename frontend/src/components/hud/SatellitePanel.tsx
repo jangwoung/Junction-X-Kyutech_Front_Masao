@@ -273,7 +273,9 @@ export default function SatellitePanel() {
       <div className="flex items-center">
         <span className="text-[10px] text-gray-300">Health/Fuel</span>
         <span className="mx-1 text-gray-500">|</span>
-        <span className="font-mono text-[10px]">{panel.status?.status?.health ?? "—"}</span>
+        <span className="font-mono text-[10px]">
+          {panel.status?.status?.health ?? "—"}
+        </span>
         <span className="text-[10px] text-gray-300"> / </span>
         <span className="font-mono text-[10px]">
           {panel.status?.status?.fuel != null
@@ -285,7 +287,9 @@ export default function SatellitePanel() {
       {!debrisLoading && debris.length > 0 && (
         <>
           <div className="flex items-center">
-            <span className="text-[10px] text-gray-300">Debris Collision Risk</span>
+            <span className="text-[10px] text-gray-300">
+              Debris Collision Risk
+            </span>
             <span className="mx-1 text-gray-500">|</span>
             <span className="font-mono text-[10px]">
               {" "}
