@@ -18,7 +18,7 @@ import {
 
 //アスペクト比2:1正距円筒図法
 const EARTH_TEXTURE_PATH = "/textures/earth_map_8k.jpg";
-const EARTH_BUMP_PATH = "/textures/earth_bump.jpg";
+const EARTH_BUMP_PATH = "/textures/earth_map_hd.jpg";
 
 //ロード時
 function Loader() {
@@ -67,6 +67,8 @@ export default function GameScene() {
   const [targetCameraY, setTargetCameraY] = useState(1);
   const [targetCameraX, setTargetCameraX] = useState(1);
 
+  const [radius, setRadius] = useState(5); 
+
   useEffect(() => {
     setHasMounted(true);
   }, []);
@@ -76,6 +78,17 @@ export default function GameScene() {
     setRotationMode((prevMode) =>
       prevMode === "horizontal" ? "vertical" : "horizontal"
     );
+  };
+
+  // ズームイン・ズームアウト用の関数
+  const handleZoomIn = () => {
+    // 最小距離2
+    setRadius(prevRadius => Math.max(prevRadius - 0.5, 2));
+  };
+
+  const handleZoomOut = () => {
+    // 最大距離10
+    setRadius(prevRadius => Math.min(prevRadius + 0.5, 10));
   };
 
   return (
@@ -98,6 +111,14 @@ export default function GameScene() {
         >
           Switch: {rotationMode === "horizontal" ? "Horizontal" : "Vertical"}
         </button>
+      </div>
+
+        {/* ズームイン・ズームアウトボタン */}
+       <div
+        style={{ position: 'absolute', top: '300px', right: '20px', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '8px' }}
+      >
+        <button onClick={handleZoomIn} style={{ padding: '8px 12px', cursor: 'pointer' }}>Zoom In (+)</button>
+        <button onClick={handleZoomOut} style={{ padding: '8px 12px', cursor: 'pointer' }}>Zoom Out (-)</button>
       </div>
 
       <ArrowKeyUI mode={rotationMode} />
@@ -141,14 +162,14 @@ export default function GameScene() {
 
           {rotationMode === 'horizontal' ? (
             <HorizontalOrbitCamera 
-              radius={4} 
+              radius={radius} 
               speed={0.1} 
               targetY={targetCameraY} 
               controlsRef={controlsRef} 
             />
           ) : (
             <VerticalOrbitCamera
-              radius={4}
+              radius={radius}
               speed={0.1}
               targetX={targetCameraX}
               controlsRef={controlsRef}
