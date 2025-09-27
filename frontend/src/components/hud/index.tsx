@@ -18,15 +18,13 @@ export default function Hud({ className, sessionEndsAtMs }: Props) {
         className ?? ""
       }`}
     >
-      {/* ナビゲーションボタン */}
-      <div className="flex justify-end mb-2">
-        <NavigationButtons />
-      </div>
-
       <div className="flex justify-between gap-8 text-sm rounded-lg">
         <div className="flex flex-col gap-1 min-w-[4rem] backdrop-blur">
           <TimePanel sessionEndsAtMs={sessionEndsAtMs} />
           <SatellitePanel />
+          <div className="mt-auto">
+            <NavigationButtons />
+          </div>
         </div>
         <div className="flex justify-between gap-8 text-sm rounded-lg">
           <GroundStationChat />

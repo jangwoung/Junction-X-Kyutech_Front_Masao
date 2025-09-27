@@ -7,15 +7,15 @@ export default function NavigationButtons() {
     <div className="flex gap-2">
       <Link
         href="/"
-        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-medium rounded transition-colors duration-200 backdrop-blur-sm border border-blue-500/30"
+        className="px-4 py-2 text-white text-[10px] font-medium rounded border border-white-500/30"
       >
-        Home
+        Camera
       </Link>
       <Link
         href="/game"
-        className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-[10px] font-medium rounded transition-colors duration-200 backdrop-blur-sm border border-green-500/30"
+        className="px-4 py-2 text-white text-[10px] font-medium rounded border border-white-500/30"
       >
-        Game
+        Pilot
       </Link>
     </div>
   );

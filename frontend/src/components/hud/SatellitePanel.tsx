@@ -283,7 +283,6 @@ export default function SatellitePanel() {
             : "— kg"}
         </span>
       </div>
-      {/* デブリ情報 */}
       {!debrisLoading && debris.length > 0 && (
         <>
           <div className="flex items-center">
