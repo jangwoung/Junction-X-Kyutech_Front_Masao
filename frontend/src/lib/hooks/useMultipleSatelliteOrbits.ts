@@ -29,8 +29,8 @@ export function useMultipleSatelliteOrbits(satelliteIds: string[]) {
               `/api/v1/satellite/${encodeURIComponent(id)}/orbit`
             );
             return { id, data, error: null };
-          } catch (error: any) {
-            return { id, data: null, error };
+          } catch (error: unknown) {
+            return { id, data: null, error: error as Error };
           }
         });
 

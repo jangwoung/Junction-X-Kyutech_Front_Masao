@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import * as THREE from "three";
 import { useSatellitePanelData } from "@/lib/hooks/useSatellitePanelData";
 import { useGameStore } from "@/stores/gameStore";
 import { useAvailableSatellites } from "../../../lib/hooks/useAvailableSatellites";
 import { useMultipleSatelliteOrbits } from "../../../lib/hooks/useMultipleSatelliteOrbits";
+import type { OrbitResponse } from "../../../lib/hooks/useSatellitePanelData";
+import type { GlobeMethods } from "react-globe.gl";
 
 // react-globe.glを動的にインポート（SSRを避けるため）
 const Globe = dynamic(() => import("react-globe.gl"), {
@@ -31,15 +33,15 @@ const Globe = dynamic(() => import("react-globe.gl"), {
 
 // 昼夜サイクル機能を持つ地球コンポーネント
 export function Earth() {
-  const globeRef = useRef<any>(null);
+  const globeRef = useRef<GlobeMethods | undefined>(undefined);
   const [time, setTime] = useState(new Date());
   const [globeSize, setGlobeSize] = useState({ width: 800, height: 600 });
-  const [selectedSatellite, setSelectedSatellite] = useState<string | null>(
-    null
-  );
+  const [selectedSatellite] = useState<string | null>(null);
 
   // 衛星データを取得
-  const satellites = useGameStore((s: any) => s.satellites);
+  const satellites = useGameStore(
+    (s: { satellites: Array<{ id: string }> }) => s.satellites
+  );
   const selectedSatelliteId = satellites[0]?.id; // 最初の衛星を選択（後で改善可能）
   const satelliteData = useSatellitePanelData(selectedSatelliteId);
 
@@ -47,7 +49,7 @@ export function Earth() {
   const { satellites: availableSatellites } = useAvailableSatellites();
   const selectedSatelliteIds = availableSatellites
     .slice(0, 3)
-    .map((sat: any) => sat.id);
+    .map((sat: { id: string }) => sat.id);
 
   // 複数の衛星の軌道データを取得
   const { satelliteOrbits } = useMultipleSatelliteOrbits(selectedSatelliteIds);
@@ -56,18 +58,21 @@ export function Earth() {
   const defaultSatellites = [
     {
       satellite_id: "himawari8",
+      timestamp: new Date().toISOString(),
       altitude: 35786,
       orbital_speed: 3.07,
       position: { x: 0, y: 0, z: 0 },
     },
     {
       satellite_id: "terra",
+      timestamp: new Date().toISOString(),
       altitude: 705,
       orbital_speed: 7.5,
       position: { x: 0, y: 0, z: 0 },
     },
     {
       satellite_id: "landsat8",
+      timestamp: new Date().toISOString(),
       altitude: 705,
       orbital_speed: 7.5,
       position: { x: 0, y: 0, z: 0 },
@@ -75,11 +80,13 @@ export function Earth() {
   ];
 
   // 実際に使用する衛星データ
-  const activeSatellites =
-    satelliteOrbits.length > 0 ? satelliteOrbits : defaultSatellites;
+  const activeSatellites: OrbitResponse[] =
+    satelliteOrbits.length > 0
+      ? (satelliteOrbits as OrbitResponse[])
+      : defaultSatellites;
 
   // 衛星の現在位置を取得する関数
-  const getSatelliteCurrentPosition = (satelliteId: string) => {
+  const getSatelliteCurrentPosition = useCallback((satelliteId: string) => {
     let altitude = 400;
     let inclination = 0;
 
@@ -110,47 +117,47 @@ export function Earth() {
     const lng = calculateSatelliteLongitude(satelliteId, altitude, inclination);
 
     return { lat, lng, altitude: altitude / 1000 }; // km単位に変換
-  };
+  }, []);
 
   // カメラを衛星の位置に移動する関数（選択状態も管理）
-  const moveCameraToSatellite = (satelliteId: string) => {
-    console.log(`Selecting satellite: ${satelliteId}`);
+  // const moveCameraToSatellite = (satelliteId: string) => {
+  //   console.log(`Selecting satellite: ${satelliteId}`);
 
-    if (globeRef.current) {
-      const satellitePos = getSatelliteCurrentPosition(satelliteId);
+  //   if (globeRef.current) {
+  //     const satellitePos = getSatelliteCurrentPosition(satelliteId);
 
-      // 衛星の位置にカメラを移動（少し離れた位置から見る）
-      const cameraPosition = {
-        lat: satellitePos.lat,
-        lng: satellitePos.lng,
-        altitude: Math.max(0.5, satellitePos.altitude * 0.1), // 衛星の10%の距離から見る
-      };
+  //     // 衛星の位置にカメラを移動（少し離れた位置から見る）
+  //     const cameraPosition = {
+  //       lat: satellitePos.lat,
+  //       lng: satellitePos.lng,
+  //       altitude: Math.max(0.5, satellitePos.altitude * 0.1), // 衛星の10%の距離から見る
+  //     };
 
-      console.log(`Moving camera to:`, { satellitePos, cameraPosition });
+  //     console.log(`Moving camera to:`, { satellitePos, cameraPosition });
 
-      globeRef.current.pointOfView(cameraPosition, 2000); // 2秒でアニメーション
+  //     globeRef.current.pointOfView(cameraPosition, 2000); // 2秒でアニメーション
 
-      // 選択状態を更新
-      setSelectedSatellite(satelliteId);
-      console.log(`Selected satellite set to: ${satelliteId}`);
-    }
-  };
+  //     // 選択状態を更新
+  //     setSelectedSatellite(satelliteId);
+  //     console.log(`Selected satellite set to: ${satelliteId}`);
+  //   }
+  // };
 
   // 選択された衛星にカメラを追従させる関数
-  const followSelectedSatellite = () => {
-    if (globeRef.current && selectedSatellite) {
-      const satellitePos = getSatelliteCurrentPosition(selectedSatellite);
+  // const followSelectedSatellite = () => {
+  //   if (globeRef.current && selectedSatellite) {
+  //     const satellitePos = getSatelliteCurrentPosition(selectedSatellite);
 
-      // 衛星の位置にカメラを追従（少し離れた位置から見る）
-      const cameraPosition = {
-        lat: satellitePos.lat,
-        lng: satellitePos.lng,
-        altitude: Math.max(0.5, satellitePos.altitude * 0.1), // 衛星の10%の距離から見る
-      };
+  //     // 衛星の位置にカメラを追従（少し離れた位置から見る）
+  //     const cameraPosition = {
+  //       lat: satellitePos.lat,
+  //       lng: satellitePos.lng,
+  //       altitude: Math.max(0.5, satellitePos.altitude * 0.1), // 衛星の10%の距離から見る
+  //     };
 
-      globeRef.current.pointOfView(cameraPosition, 100); // 短いアニメーションで追従
-    }
-  };
+  //     globeRef.current.pointOfView(cameraPosition, 100); // 短いアニメーションで追従
+  //   }
+  // };
 
   // 時間を更新して昼夜サイクルを実装
   useEffect(() => {
@@ -186,7 +193,7 @@ export function Earth() {
           satellitePos,
           cameraPosition,
         });
-        globeRef.current.pointOfView(cameraPosition, 200);
+        globeRef.current.pointOfView(cameraPosition);
       }
     }, 200); // 200ms間隔で追従
 
@@ -194,7 +201,7 @@ export function Earth() {
       console.log("Clearing follow interval");
       clearInterval(followInterval);
     };
-  }, [selectedSatellite]);
+  }, [selectedSatellite, getSatelliteCurrentPosition]);
 
   // ウィンドウサイズに応じて地球のサイズを調整
   useEffect(() => {
@@ -210,42 +217,20 @@ export function Earth() {
     return () => window.removeEventListener("resize", updateSize);
   }, []);
 
+  // アニメーション停止用のref
+  const stopRotationRef = useRef<(() => void) | undefined>(undefined);
+
   // コンポーネントのクリーンアップ時にアニメーションを停止
   useEffect(() => {
     return () => {
-      if (globeRef.current && (globeRef.current as any).stopRotation) {
-        (globeRef.current as any).stopRotation();
+      if (stopRotationRef.current) {
+        stopRotationRef.current();
       }
     };
   }, []);
 
-  // 衛星の高度データが変更されたときにカメラ位置を更新
-  useEffect(() => {
-    if (globeRef.current && satelliteData.altitudeKm !== undefined) {
-      const cameraPos = getCameraPosition();
-      globeRef.current.pointOfView(cameraPos, 1000); // 1秒でアニメーション
-    }
-  }, [satelliteData.altitudeKm]);
-
-  // 地球のテクスチャとライティング設定（高品質8Kテクスチャを使用）
-  const globeImageUrl = "/textures/earth_map_8k.jpg";
-  const bumpImageUrl = "/textures/earth_bump.jpg";
-
-  // 昼夜サイクルのための太陽位置計算
-  const getSunPosition = () => {
-    const hours = time.getUTCHours() + time.getUTCMinutes() / 60;
-    // 太陽は地球から非常に離れた位置に固定
-    // 地球の自転によって昼夜サイクルが生まれる
-    const distance = 10000; // 太陽までの距離（地球半径の10000倍）
-    return {
-      x: distance, // 太陽は常にX軸の正の方向にある
-      y: 0,
-      z: 0,
-    };
-  };
-
   // 衛星の高度に基づいてカメラ位置を計算
-  const getCameraPosition = () => {
+  const getCameraPosition = useCallback(() => {
     const altitudeKm = satelliteData.altitudeKm || 400; // デフォルト高度400km
 
     // より近いカメラ位置に調整
@@ -261,6 +246,30 @@ export function Earth() {
       lat: 20,
       lng: 0,
       altitude: cameraAltitude,
+    };
+  }, [satelliteData.altitudeKm]);
+
+  // 衛星の高度データが変更されたときにカメラ位置を更新
+  useEffect(() => {
+    if (globeRef.current && satelliteData.altitudeKm !== undefined) {
+      const cameraPos = getCameraPosition();
+      globeRef.current.pointOfView(cameraPos);
+    }
+  }, [satelliteData.altitudeKm, getCameraPosition]);
+
+  // 地球のテクスチャとライティング設定（高品質8Kテクスチャを使用）
+  const globeImageUrl = "/textures/earth_map_8k.jpg";
+  const bumpImageUrl = "/textures/earth_bump.jpg";
+
+  // 昼夜サイクルのための太陽位置計算
+  const getSunPosition = () => {
+    // 太陽は地球から非常に離れた位置に固定
+    // 地球の自転によって昼夜サイクルが生まれる
+    const distance = 10000; // 太陽までの距離（地球半径の10000倍）
+    return {
+      x: distance, // 太陽は常にX軸の正の方向にある
+      y: 0,
+      z: 0,
     };
   };
 
@@ -310,7 +319,7 @@ export function Earth() {
   const calculateSatelliteLongitude = (
     satelliteId: string,
     altitude: number,
-    inclination: number
+    _inclination: number
   ): number => {
     const time = Date.now() * 0.0001; // 時間を遅くして見やすく
     const orbitalPeriod =
@@ -337,170 +346,181 @@ export function Earth() {
   const drawSatelliteOrbits = (scene: THREE.Scene) => {
     // 既存の衛星関連オブジェクトを削除
     const existingSatellites = scene.children.filter(
-      (child: any) =>
+      (child: THREE.Object3D) =>
         child.userData?.type === "satellite" ||
         child.userData?.type === "orbit" ||
         child.userData?.type === "satellite-ring" ||
         child.userData?.type === "satellite-outer-ring"
     );
-    existingSatellites.forEach((satellite: any) => scene.remove(satellite));
+    existingSatellites.forEach((satellite: THREE.Object3D) =>
+      scene.remove(satellite)
+    );
 
     // 軌道データを準備（実際の衛星軌道データに基づく）
-    const orbitPaths = activeSatellites.map((orbit: any, index: number) => {
-      // 各衛星の実際の軌道高度を設定
-      let actualAltitude = orbit.altitude;
-      let orbitalInclination = 0;
+    const orbitPaths = activeSatellites.map(
+      (orbit: OrbitResponse, index: number) => {
+        // 各衛星の実際の軌道高度を設定
+        let actualAltitude = orbit.altitude || 400;
+        let orbitalInclination = 0;
 
-      // 衛星タイプに応じて実際の軌道パラメータを設定
-      switch (orbit.satellite_id) {
-        case "himawari8":
-          actualAltitude = 35786; // 静止軌道
-          orbitalInclination = 0;
-          break;
-        case "goes16":
-          actualAltitude = 35786; // 静止軌道
-          orbitalInclination = 0;
-          break;
-        case "terra":
-          actualAltitude = 705; // 極軌道
-          orbitalInclination = 98.5; // 極軌道の傾斜角
-          break;
-        case "landsat8":
-          actualAltitude = 705; // 極軌道
-          orbitalInclination = 98.2;
-          break;
-        case "worldview3":
-          actualAltitude = 617; // 低軌道
-          orbitalInclination = 98.0;
-          break;
-        default:
-          actualAltitude = 400 + index * 200; // デフォルト高度
-          orbitalInclination = index * 30;
-      }
+        // 衛星タイプに応じて実際の軌道パラメータを設定
+        switch (orbit.satellite_id) {
+          case "himawari8":
+            actualAltitude = 35786; // 静止軌道
+            orbitalInclination = 0;
+            break;
+          case "goes16":
+            actualAltitude = 35786; // 静止軌道
+            orbitalInclination = 0;
+            break;
+          case "terra":
+            actualAltitude = 705; // 極軌道
+            orbitalInclination = 98.5; // 極軌道の傾斜角
+            break;
+          case "landsat8":
+            actualAltitude = 705; // 極軌道
+            orbitalInclination = 98.2;
+            break;
+          case "worldview3":
+            actualAltitude = 617; // 低軌道
+            orbitalInclination = 98.0;
+            break;
+          default:
+            actualAltitude = 400 + index * 200; // デフォルト高度
+            orbitalInclination = index * 30;
+        }
 
-      return {
-        satelliteId: orbit.satellite_id,
-        path: generateOrbitPath(
-          orbit.satellite_id,
+        return {
+          satelliteId: orbit.satellite_id,
+          path: generateOrbitPath(
+            orbit.satellite_id,
+            actualAltitude,
+            orbitalInclination
+          ),
+          color: getSatelliteColor(index),
+          currentPosition: {
+            // 実際の軌道位置を計算（時間ベースの位置）
+            lat: calculateSatelliteLatitude(
+              orbit.satellite_id,
+              actualAltitude,
+              orbitalInclination
+            ),
+            lng: calculateSatelliteLongitude(
+              orbit.satellite_id,
+              actualAltitude,
+              orbitalInclination
+            ),
+            altitude: actualAltitude / 1000, // km単位に変換
+          },
           actualAltitude,
-          orbitalInclination
-        ),
-        color: getSatelliteColor(index),
-        currentPosition: {
-          // 実際の軌道位置を計算（時間ベースの位置）
-          lat: calculateSatelliteLatitude(
-            orbit.satellite_id,
-            actualAltitude,
-            orbitalInclination
-          ),
-          lng: calculateSatelliteLongitude(
-            orbit.satellite_id,
-            actualAltitude,
-            orbitalInclination
-          ),
-          altitude: actualAltitude / 1000, // km単位に変換
-        },
-        actualAltitude,
-        orbitalInclination,
-      };
-    });
+          orbitalInclination,
+        };
+      }
+    );
 
     // 軌道線を描画
-    orbitPaths.forEach((orbit: any, index: number) => {
-      const curve = new THREE.CatmullRomCurve3(
-        orbit.path.map((point: any) => new THREE.Vector3(...point))
-      );
+    orbitPaths.forEach(
+      (orbit: {
+        path: number[][];
+        color: string;
+        satelliteId: string;
+        currentPosition: { lat: number; lng: number; altitude: number };
+      }) => {
+        const curve = new THREE.CatmullRomCurve3(
+          orbit.path.map((point: number[]) => new THREE.Vector3(...point))
+        );
 
-      const geometry = new THREE.TubeGeometry(curve, 100, 0.05, 8, false); // 軌道線をさらに太く
-      const material = new THREE.MeshBasicMaterial({
-        color: orbit.color,
-        transparent: true,
-        opacity: 1.0, // 完全不透明にして視認性を最大化
-      });
+        const geometry = new THREE.TubeGeometry(curve, 100, 0.05, 8, false); // 軌道線をさらに太く
+        const material = new THREE.MeshBasicMaterial({
+          color: orbit.color,
+          transparent: true,
+          opacity: 1.0, // 完全不透明にして視認性を最大化
+        });
 
-      const orbitMesh = new THREE.Mesh(geometry, material);
-      orbitMesh.userData = { type: "orbit", satelliteId: orbit.satelliteId };
-      scene.add(orbitMesh);
+        const orbitMesh = new THREE.Mesh(geometry, material);
+        orbitMesh.userData = { type: "orbit", satelliteId: orbit.satelliteId };
+        scene.add(orbitMesh);
 
-      // 衛星の現在位置にマーカーを追加（大きく視認しやすく）
-      const point = orbit.currentPosition;
+        // 衛星の現在位置にマーカーを追加（大きく視認しやすく）
+        const point = orbit.currentPosition;
 
-      // メインの衛星マーカー（非常に大きく、目立つ赤い球体）
-      const geometry2 = new THREE.SphereGeometry(0.3, 32, 32); // サイズを大幅に拡大、高解像度
-      const material2 = new THREE.MeshBasicMaterial({
-        color: "#ff0000", // 鮮やかな赤色
-      });
+        // メインの衛星マーカー（非常に大きく、目立つ赤い球体）
+        const geometry2 = new THREE.SphereGeometry(0.3, 32, 32); // サイズを大幅に拡大、高解像度
+        const material2 = new THREE.MeshBasicMaterial({
+          color: "#ff0000", // 鮮やかな赤色
+        });
 
-      const satelliteMesh = new THREE.Mesh(geometry2, material2);
+        const satelliteMesh = new THREE.Mesh(geometry2, material2);
 
-      // 衛星の周りに光るリングを追加（大きく）
-      const ringGeometry = new THREE.RingGeometry(0.4, 0.6, 32);
-      const ringMaterial = new THREE.MeshBasicMaterial({
-        color: "#ff0000",
-        transparent: true,
-        opacity: 0.9,
-        side: THREE.DoubleSide,
-      });
-      const ringMesh = new THREE.Mesh(ringGeometry, ringMaterial);
+        // 衛星の周りに光るリングを追加（大きく）
+        const ringGeometry = new THREE.RingGeometry(0.4, 0.6, 32);
+        const ringMaterial = new THREE.MeshBasicMaterial({
+          color: "#ff0000",
+          transparent: true,
+          opacity: 0.9,
+          side: THREE.DoubleSide,
+        });
+        const ringMesh = new THREE.Mesh(ringGeometry, ringMaterial);
 
-      // 外側の光るエフェクト（さらに大きく）
-      const outerRingGeometry = new THREE.RingGeometry(0.8, 1.0, 32);
-      const outerRingMaterial = new THREE.MeshBasicMaterial({
-        color: "#ff0000",
-        transparent: true,
-        opacity: 0.6,
-        side: THREE.DoubleSide,
-      });
-      const outerRingMesh = new THREE.Mesh(
-        outerRingGeometry,
-        outerRingMaterial
-      );
+        // 外側の光るエフェクト（さらに大きく）
+        const outerRingGeometry = new THREE.RingGeometry(0.8, 1.0, 32);
+        const outerRingMaterial = new THREE.MeshBasicMaterial({
+          color: "#ff0000",
+          transparent: true,
+          opacity: 0.6,
+          side: THREE.DoubleSide,
+        });
+        const outerRingMesh = new THREE.Mesh(
+          outerRingGeometry,
+          outerRingMaterial
+        );
 
-      // 緯度経度を3D座標に変換
-      const latRad = (point.lat * Math.PI) / 180;
-      const lngRad = (point.lng * Math.PI) / 180;
-      const radius = 1 + point.altitude / 6371;
+        // 緯度経度を3D座標に変換
+        const latRad = (point.lat * Math.PI) / 180;
+        const lngRad = (point.lng * Math.PI) / 180;
+        const radius = 1 + point.altitude / 6371;
 
-      const satellitePosition = new THREE.Vector3(
-        radius * Math.cos(latRad) * Math.cos(lngRad),
-        radius * Math.sin(latRad),
-        radius * Math.cos(latRad) * Math.sin(lngRad)
-      );
+        const satellitePosition = new THREE.Vector3(
+          radius * Math.cos(latRad) * Math.cos(lngRad),
+          radius * Math.sin(latRad),
+          radius * Math.cos(latRad) * Math.sin(lngRad)
+        );
 
-      // 衛星マーカーの位置を設定
-      satelliteMesh.position.copy(satellitePosition);
-      satelliteMesh.userData = {
-        type: "satellite",
-        satelliteId: orbit.satelliteId,
-        originalColor: "#ff0000", // 赤色に統一
-      };
-      scene.add(satelliteMesh);
+        // 衛星マーカーの位置を設定
+        satelliteMesh.position.copy(satellitePosition);
+        satelliteMesh.userData = {
+          type: "satellite",
+          satelliteId: orbit.satelliteId,
+          originalColor: "#ff0000", // 赤色に統一
+        };
+        scene.add(satelliteMesh);
 
-      // リングの位置と向きを設定
-      ringMesh.position.copy(satellitePosition);
-      outerRingMesh.position.copy(satellitePosition);
+        // リングの位置と向きを設定
+        ringMesh.position.copy(satellitePosition);
+        outerRingMesh.position.copy(satellitePosition);
 
-      // リングを地球の中心から衛星への方向に向ける
-      const direction = satellitePosition.clone().normalize();
-      const up = new THREE.Vector3(0, 1, 0);
-      const right = direction.clone().cross(up).normalize();
-      up.copy(right.clone().cross(direction));
+        // リングを地球の中心から衛星への方向に向ける
+        const direction = satellitePosition.clone().normalize();
+        const up = new THREE.Vector3(0, 1, 0);
+        const right = direction.clone().cross(up).normalize();
+        up.copy(right.clone().cross(direction));
 
-      ringMesh.lookAt(satellitePosition.clone().add(direction));
-      outerRingMesh.lookAt(satellitePosition.clone().add(direction));
+        ringMesh.lookAt(satellitePosition.clone().add(direction));
+        outerRingMesh.lookAt(satellitePosition.clone().add(direction));
 
-      // リングをシーンに追加
-      ringMesh.userData = {
-        type: "satellite-ring",
-        satelliteId: orbit.satelliteId,
-      };
-      outerRingMesh.userData = {
-        type: "satellite-outer-ring",
-        satelliteId: orbit.satelliteId,
-      };
-      scene.add(ringMesh);
-      scene.add(outerRingMesh);
-    });
+        // リングをシーンに追加
+        ringMesh.userData = {
+          type: "satellite-ring",
+          satelliteId: orbit.satelliteId,
+        };
+        outerRingMesh.userData = {
+          type: "satellite-outer-ring",
+          satelliteId: orbit.satelliteId,
+        };
+        scene.add(ringMesh);
+        scene.add(outerRingMesh);
+      }
+    );
   };
 
   return (
@@ -533,10 +553,12 @@ export function Earth() {
             const scene = globeRef.current.scene();
             if (scene) {
               // 既存のライトを削除
-              const existingLights = scene.children.filter((child: any) =>
-                child.type.includes("Light")
+              const existingLights = scene.children.filter(
+                (child: THREE.Object3D) => child.type.includes("Light")
               );
-              existingLights.forEach((light: any) => scene.remove(light));
+              existingLights.forEach((light: THREE.Object3D) =>
+                scene.remove(light)
+              );
 
               // 太陽の位置に基づく方向ライトを追加（太陽光の色に変更）
               const sunPos = getSunPosition();
@@ -595,9 +617,9 @@ export function Earth() {
                 const time = Date.now() * 0.001; // 時間を秒単位に変換
 
                 // シーン内の地球メッシュを探して回転させる
-                scene.traverse((child: any) => {
+                scene.traverse((child: THREE.Object3D) => {
                   if (
-                    child.isMesh &&
+                    child instanceof THREE.Mesh &&
                     child.geometry &&
                     child.geometry.type === "SphereGeometry"
                   ) {
@@ -667,22 +689,38 @@ export function Earth() {
                   }
 
                   // 衛星マーカーの点滅効果（赤色で統一）
-                  if (child.userData?.type === "satellite") {
+                  if (
+                    child.userData?.type === "satellite" &&
+                    child instanceof THREE.Mesh
+                  ) {
                     const pulse = Math.sin(time * 4) * 0.5 + 1.0; // 0.5〜1.5の間で点滅（より激しく）
                     const color = new THREE.Color("#ff0000"); // 鮮やかな赤色
                     color.multiplyScalar(pulse);
-                    child.material.color = color;
+                    const material = child.material as THREE.MeshBasicMaterial;
+                    if (material && "color" in material) {
+                      material.color = color;
+                    }
                   }
 
                   // リングの透明度も点滅（赤色で統一）
-                  if (child.userData?.type === "satellite-ring") {
+                  if (
+                    child.userData?.type === "satellite-ring" &&
+                    child instanceof THREE.Mesh
+                  ) {
                     const pulse = Math.sin(time * 3) * 0.3 + 0.7; // 0.4〜1.0の間で点滅
-                    child.material.opacity = pulse;
+                    const material = child.material as THREE.Material;
+                    material.opacity = pulse;
+                    material.transparent = true;
                   }
 
-                  if (child.userData?.type === "satellite-outer-ring") {
+                  if (
+                    child.userData?.type === "satellite-outer-ring" &&
+                    child instanceof THREE.Mesh
+                  ) {
                     const pulse = Math.sin(time * 2) * 0.2 + 0.4; // 0.2〜0.6の間で点滅
-                    child.material.opacity = pulse;
+                    const material = child.material as THREE.Material;
+                    material.opacity = pulse;
+                    material.transparent = true;
                   }
                 });
 
@@ -693,7 +731,8 @@ export function Earth() {
               rotateGlobe();
 
               // クリーンアップ用の関数を保存
-              (globeRef.current as any).stopRotation = () => {
+              // 停止処理をrefに登録
+              stopRotationRef.current = () => {
                 if (animationId) {
                   cancelAnimationFrame(animationId);
                 }
@@ -722,7 +761,7 @@ export function Earth() {
         <div>Available: {availableSatellites.length}</div>
         <div>Selected IDs: {selectedSatelliteIds.join(", ")}</div>
         <div>Following: {selectedSatellite || "None"}</div>
-        {activeSatellites.map((orbit: any, index: number) => {
+        {activeSatellites.map((orbit: OrbitResponse, index: number) => {
           const pos = getSatelliteCurrentPosition(orbit.satellite_id);
           return (
             <div key={orbit.satellite_id} style={{ fontSize: "10px" }}>
@@ -753,7 +792,7 @@ export function Earth() {
           <h3 style={{ margin: "0 0 15px 0", color: "#4ecdc4" }}>
             🛰️ Active Satellites
           </h3>
-          {activeSatellites.map((orbit: any, index: number) => {
+          {activeSatellites.map((orbit: OrbitResponse, index: number) => {
             // 実際の軌道高度を取得
             let actualAltitude = orbit.altitude;
             let orbitalType = "Unknown";

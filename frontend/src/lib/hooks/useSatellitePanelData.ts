@@ -3,9 +3,9 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-type Vector3 = { x: number; y: number; z: number };
+export type Vector3 = { x: number; y: number; z: number };
 
-type OrbitResponse = {
+export type OrbitResponse = {
   satellite_id: string;
   timestamp: string | number | Date;
   position?: Vector3;
