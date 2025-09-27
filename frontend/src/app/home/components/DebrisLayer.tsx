@@ -210,16 +210,6 @@ export function DebrisLayer({ missionId = "demo" }: DebrisLayerProps) {
     );
   }
 
-  if (debris.length === 0) {
-    return (
-      <Html center>
-        <div style={{ color: "#66bb6a", fontSize: "14px" }}>
-          デブリ脅威は検出されていません
-        </div>
-      </Html>
-    );
-  }
-
   return (
     <group>
       {Object.entries(debrisByLevel).map(([level, levelDebrisData]) => {
@@ -248,72 +238,6 @@ export function DebrisLayer({ missionId = "demo" }: DebrisLayerProps) {
         );
       })}
 
-      {/* デブリ情報表示 */}
-      <Html position={[3, 2, 0]} style={{ pointerEvents: "none" }}>
-        <div
-          style={{
-            background: "rgba(0,0,0,0.7)",
-            color: "white",
-            padding: "10px",
-            borderRadius: "8px",
-            fontSize: "12px",
-            minWidth: "200px",
-          }}
-        >
-          <div style={{ fontWeight: "bold", marginBottom: "8px" }}>
-            デブリ脅威: {debris.length}個
-          </div>
-          {Object.entries(debrisByLevel).map(([level, levelDebrisData]) => {
-            const appearance = getDebrisAppearance(parseInt(level));
-            return (
-              <div
-                key={level}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  marginBottom: "4px",
-                  fontSize: "11px",
-                }}
-              >
-                <div
-                  style={{
-                    width: "8px",
-                    height: "8px",
-                    backgroundColor: appearance.color,
-                    borderRadius: "50%",
-                    marginRight: "8px",
-                    boxShadow: `0 0 6px ${appearance.color}`,
-                  }}
-                />
-                危険度{level}: {levelDebrisData.length}個
-              </div>
-            );
-          })}
-
-          {/* 追加情報表示 */}
-          {debris.length > 0 && (
-            <div style={{ marginTop: "8px", fontSize: "10px", opacity: 0.8 }}>
-              <div>
-                衝突確率 &gt; 50%:{" "}
-                {
-                  debris.filter((d) => (d.collision_probability ?? 0) > 0.5)
-                    .length
-                }
-                個
-              </div>
-              <div>
-                1時間以内接近:{" "}
-                {
-                  debris.filter(
-                    (d) => (d.time_to_closest ?? Infinity) < 3600000
-                  ).length
-                }
-                個
-              </div>
-            </div>
-          )}
-        </div>
-      </Html>
     </group>
   );
 }

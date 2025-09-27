@@ -3,6 +3,7 @@
 import TimePanel from "./TimePanel";
 import SatellitePanel from "./SatellitePanel";
 import MissionProgress from "./MissionProgress";
+import DebrisPanel from "./DebrisPanel";
 import GroundStationChat from "@/components/GroundStationChat";
 
 type Props = {
@@ -21,6 +22,7 @@ export default function Hud({ className, sessionEndsAtMs }: Props) {
         <div className="flex flex-col gap-1 min-w-[16rem] backdrop-blur">
           <TimePanel sessionEndsAtMs={sessionEndsAtMs} />
           <SatellitePanel />
+          <DebrisPanel />
         </div>
         <div className="flex justify-between gap-8 text-sm rounded-lg">
           <GroundStationChat />
