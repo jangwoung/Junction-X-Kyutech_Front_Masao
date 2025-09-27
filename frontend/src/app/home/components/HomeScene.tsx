@@ -21,7 +21,7 @@ export default function HomeScene() {
       }}
     >
       <ErrorBoundary>
-        <Canvas camera={{ position: [0, 0, 15000], fov: 50 }}>
+        <Canvas camera={{ position: [0, 0, 6], fov: 50 }}>
           <ambientLight intensity={1.5} />
           <directionalLight position={[5, 5, 5]} intensity={1.5} />
 
