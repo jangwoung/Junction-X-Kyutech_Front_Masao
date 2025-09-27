@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 
-type JsonValue = any;
+type JsonValue = unknown;
 
 export default function BackendTestPage() {
   const baseUrl = useMemo(
@@ -39,7 +39,7 @@ export default function BackendTestPage() {
         let data: JsonValue = text;
         try {
           data = JSON.parse(text);
-        } catch (_) {
+        } catch {
           // keep raw text
         }
         if (!res.ok) {
@@ -48,8 +48,9 @@ export default function BackendTestPage() {
           );
         }
         setResult(data);
-      } catch (e: any) {
-        setError(e?.message || String(e));
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e);
+        setError(message);
       } finally {
         setLoading(false);
       }

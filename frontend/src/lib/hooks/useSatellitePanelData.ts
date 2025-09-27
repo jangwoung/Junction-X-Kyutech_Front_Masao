@@ -31,7 +31,7 @@ type StatusResponse = {
 
 type CoverageResponse = {
   satellite_id: string;
-  coverage_area?: any;
+  coverage_area?: unknown;
   current_position?: {
     latitude?: number;
     longitude?: number;
@@ -125,10 +125,14 @@ export function useSatellitePanelData(satelliteId?: string) {
   const isLoading =
     enabled && (orbitLoading || statusLoading || coverageLoading);
   const isError = orbitError || statusError || coverageError;
+  function getErrorMessage(err: unknown): string | undefined {
+    if (err instanceof Error) return err.message;
+    return undefined;
+  }
   const errorMessage =
-    (orbitErr as any)?.message ||
-    (statusErr as any)?.message ||
-    (coverageErr as any)?.message;
+    getErrorMessage(orbitErr) ||
+    getErrorMessage(statusErr) ||
+    getErrorMessage(coverageErr);
 
   return {
     orbit,

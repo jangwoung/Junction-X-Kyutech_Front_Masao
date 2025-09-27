@@ -10,6 +10,57 @@ function toLowerStr(v: MaybeStr) {
   return typeof v === "string" ? v.toLowerCase() : String(v ?? "");
 }
 
+// Space-Track 準拠の候補（優先順）: コンポーネント外に配置して安定参照にする
+const HIMAWARI_PRIORITY = [
+  // 1) SATCAT (NORAD)
+  { field: "noradId", value: 41836 }, // Himawari-9
+  { field: "satcat", value: 41836 },
+  { field: "norad", value: 41836 },
+
+  { field: "noradId", value: 40267 }, // Himawari-8
+  { field: "satcat", value: 40267 },
+  { field: "norad", value: 40267 },
+
+  // 2) OBJECT_ID (COSPAR)
+  { field: "objectId", value: "2016-064A" }, // H-9
+  { field: "cosparId", value: "2016-064A" },
+  { field: "object_id", value: "2016-064A" },
+
+  { field: "objectId", value: "2014-060A" }, // H-8
+  { field: "cosparId", value: "2014-060A" },
+  { field: "object_id", value: "2014-060A" },
+
+  // 3) OBJECT_NAME（Space-Track の名前表記）
+  { field: "objectName", value: "HIMAWARI-9" },
+  { field: "name", value: "HIMAWARI-9" },
+
+  { field: "objectName", value: "HIMAWARI-8" },
+  { field: "name", value: "HIMAWARI-8" },
+
+  // 4) 自由表記のゆらぎ（id/nameに含まれる）
+  { field: "id", value: "himawari-9" },
+  { field: "id", value: "himawari9" },
+  { field: "name", value: "himawari 9" },
+
+  { field: "id", value: "himawari-8" },
+  { field: "id", value: "himawari8" },
+  { field: "name", value: "himawari 8" },
+
+  // 5) 最後の保険：'himawari' 部分一致
+  { field: "id", value: "himawari" },
+  { field: "name", value: "himawari" },
+] as const;
+
+function getFieldValue(obj: unknown, key: string): MaybeStr {
+  if (obj && typeof obj === "object") {
+    const rec = obj as Record<string, unknown>;
+    const value = rec[key];
+    if (typeof value === "string" || typeof value === "number") return value;
+    return value == null ? undefined : String(value);
+  }
+  return undefined;
+}
+
 export default function SatellitePanel() {
   const satellites = useGameStore((s) => s.satellites);
   const selectedSatelliteId = useGameStore((s) => s.selectedSatelliteId);
@@ -20,47 +71,6 @@ export default function SatellitePanel() {
     [satellites, selectedSatelliteId]
   );
 
-  // Space-Track 準拠の候補（優先順）
-  const HIMAWARI_PRIORITY = [
-    // 1) SATCAT (NORAD)
-    { field: "noradId", value: 41836 }, // Himawari-9
-    { field: "satcat", value: 41836 },
-    { field: "norad", value: 41836 },
-
-    { field: "noradId", value: 40267 }, // Himawari-8
-    { field: "satcat", value: 40267 },
-    { field: "norad", value: 40267 },
-
-    // 2) OBJECT_ID (COSPAR)
-    { field: "objectId", value: "2016-064A" }, // H-9
-    { field: "cosparId", value: "2016-064A" },
-    { field: "object_id", value: "2016-064A" },
-
-    { field: "objectId", value: "2014-060A" }, // H-8
-    { field: "cosparId", value: "2014-060A" },
-    { field: "object_id", value: "2014-060A" },
-
-    // 3) OBJECT_NAME（Space-Track の名前表記）
-    { field: "objectName", value: "HIMAWARI-9" },
-    { field: "name", value: "HIMAWARI-9" },
-
-    { field: "objectName", value: "HIMAWARI-8" },
-    { field: "name", value: "HIMAWARI-8" },
-
-    // 4) 自由表記のゆらぎ（id/nameに含まれる）
-    { field: "id", value: "himawari-9" },
-    { field: "id", value: "himawari9" },
-    { field: "name", value: "himawari 9" },
-
-    { field: "id", value: "himawari-8" },
-    { field: "id", value: "himawari8" },
-    { field: "name", value: "himawari 8" },
-
-    // 5) 最後の保険：'himawari' 部分一致
-    { field: "id", value: "himawari" },
-    { field: "name", value: "himawari" },
-  ] as const;
-
   const defaultSatelliteId = useMemo(() => {
     // .env 明示があれば最優先
     const fromEnv = process.env.NEXT_PUBLIC_DEFAULT_SATELLITE_ID as
@@ -70,7 +80,7 @@ export default function SatellitePanel() {
 
     // STARLINK-32713 を最優先で試す
     const starlinkExact = satellites.find(
-      (s: any) =>
+      (s) =>
         toLowerStr(s?.id) === "starlink-32713" ||
         toLowerStr(s?.name) === "starlink-32713"
     );
@@ -81,8 +91,8 @@ export default function SatellitePanel() {
 
     // 次点：既存Himawari優先ルール
     for (const rule of HIMAWARI_PRIORITY) {
-      const hit = satellites.find((s: any) => {
-        const v: MaybeStr = s?.[rule.field as keyof typeof s];
+      const hit = satellites.find((s) => {
+        const v: MaybeStr = getFieldValue(s as unknown, rule.field);
         if (v == null) return false;
         if (typeof rule.value === "number") {
           const num = typeof v === "number" ? v : Number(v);
