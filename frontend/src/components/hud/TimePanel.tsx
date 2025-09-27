@@ -54,7 +54,7 @@ export default function TimePanel({ sessionEndsAtMs }: Props) {
   }, [now]);
 
   return (
-    <div className="flex flex-col gap-1 min-w-[16rem] backdrop-blur">
+    <div className="flex flex-col gap-1 min-w-[10rem] backdrop-blur">
       <div className="flex items-center">
         <span className="text-xs text-gray-300">UTC</span>
         <span className="mx-1 text-gray-500">|</span>

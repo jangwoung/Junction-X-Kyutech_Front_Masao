@@ -7,6 +7,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Earth } from "./Earth";
 import { DebrisLayer } from "./DebrisLayer";
 import { Loader } from "./Loader";
+import { CameraController } from "./CameraController";
 
 // The main scene component
 export default function HomeScene() {
@@ -20,14 +21,16 @@ export default function HomeScene() {
       }}
     >
       <ErrorBoundary>
-        <Canvas camera={{ position: [0, 0, 10], fov: 50 }}>
+        <Canvas camera={{ position: [0, 0, 6], fov: 50 }}>
           <ambientLight intensity={1.5} />
           <directionalLight position={[5, 5, 5]} intensity={1.5} />
 
-          <Suspense fallback={<Loader />}>
-            <Earth />
-            <DebrisLayer missionId="demo" />
-          </Suspense>
+          <CameraController>
+            <Suspense fallback={<Loader />}>
+              <Earth />
+              <DebrisLayer missionId="demo" />
+            </Suspense>
+          </CameraController>
 
           <OrbitControls enableDamping />
         </Canvas>
