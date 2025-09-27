@@ -8,17 +8,19 @@ import * as THREE from "three";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { CameraTracker, CameraDisplay } from "./CameraInfo";
+import { AutoObjectSpawner } from "./AutoObjectSpawner";
+import { ArrowKeyUI } from "./ArrowKeyUI";
 import { HorizontalOrbitCamera, VerticalOrbitCamera } from "./CameraScript";
 import {
   HorizontalCameraKeyboardController,
   VerticalCameraKeyboardController,
 } from "./EventHandlers";
-import { ArrowKeyUI } from "./ArrowKeyUI";
 
 //アスペクト比2:1正距円筒図法
-const EARTH_TEXTURE_PATH = "/textures/earth_map.avif";
+const EARTH_TEXTURE_PATH = "/textures/earth_map_8k.jpg";
 const EARTH_BUMP_PATH = "/textures/earth_bump.jpg";
 
+//ロード時
 function Loader() {
   return (
     <Html center>
@@ -27,6 +29,7 @@ function Loader() {
   );
 }
 
+//地球
 function Earth() {
   const earthRef = useRef<THREE.Mesh>(null!);
   const [colorMap, bumpMap] = useLoader(THREE.TextureLoader, [
@@ -53,18 +56,14 @@ function Earth() {
   );
 }
 
+// メインのシーンコンポーネント
 export default function GameScene() {
   const [camPos, setCamPos] = useState(new THREE.Vector3());
   const [camRot, setCamRot] = useState(new THREE.Euler());
   const [hasMounted, setHasMounted] = useState(false);
   const controlsRef = useRef<OrbitControlsImpl>(null!);
 
-  // 1. 回転モードを管理するStateを追加 (デフォルトは 'horizontal')
-  const [rotationMode, setRotationMode] = useState<"horizontal" | "vertical">(
-    "horizontal"
-  );
-
-  // カメラの目標Y座標を管理するState (横回転モードでのみ使用)
+  const [rotationMode, setRotationMode] = useState<'horizontal' | 'vertical'>('horizontal');
   const [targetCameraY, setTargetCameraY] = useState(1);
   const [targetCameraX, setTargetCameraX] = useState(1);
 
@@ -72,7 +71,7 @@ export default function GameScene() {
     setHasMounted(true);
   }, []);
 
-  // 2. モードを切り替えるための関数
+    // 回転モードを切り替える関数
   const toggleRotationMode = () => {
     setRotationMode((prevMode) =>
       prevMode === "horizontal" ? "vertical" : "horizontal"
@@ -89,7 +88,7 @@ export default function GameScene() {
       }}
     >
       {/* --- UI --- */}
-      {/* 3. 回転モードを切り替えるボタンを追加 */}
+      {/* 回転モードを切り替えるボタン */}
       <div
         style={{ position: "absolute", top: "20px", left: "20px", zIndex: 10 }}
       >
@@ -118,38 +117,39 @@ export default function GameScene() {
         />
       )}
 
-      {/* --- 3D Scene --- */}
+      {/*  3D Scene  */}
       <ErrorBoundary>
         <Canvas
-          camera={{ position: [0, 1, 4], fov: 50 }}
-          // keyプロパティを使ってモード変更時にカメラをリセット
-          key={rotationMode}
+          camera={{ position: [0, 1, 4], fov: 42 }}
+          key={rotationMode} 
         >
-          <ambientLight intensity={1.5} />
-          <directionalLight position={[5, 5, 5]} intensity={1.5} />
+          {/*  明るさ調整  */}
+          <ambientLight intensity={0.5} />
+          <directionalLight position={[5, 5, 5]} intensity={1.0} />
 
           <Suspense fallback={<Loader />}>
             <Earth />
           </Suspense>
-
-          <OrbitControls
-            enabled={rotationMode === "horizontal"}
-            enableDamping
+          
+          <OrbitControls 
+            enabled={rotationMode === 'horizontal'}
+            enableDamping 
             target={[0, 0, 0]}
           />
 
-          {/* 4. Stateの値に応じて、描画するカメラコンポーネントを切り替える */}
-          {rotationMode === "horizontal" ? (
-            <HorizontalOrbitCamera
-              radius={4}
-              speed={0.3}
-              targetY={targetCameraY}
-              controlsRef={controlsRef}
+          <AutoObjectSpawner />
+
+          {rotationMode === 'horizontal' ? (
+            <HorizontalOrbitCamera 
+              radius={4} 
+              speed={0.1} 
+              targetY={targetCameraY} 
+              controlsRef={controlsRef} 
             />
           ) : (
             <VerticalOrbitCamera
-              radius={5}
-              speed={0.3}
+              radius={4}
+              speed={0.1}
               targetX={targetCameraX}
               controlsRef={controlsRef}
             />
