@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import type { GameState, Player, Mission } from "@/lib/schemas";
+import type { GameState, Player, Mission, Satellite } from "@/lib/schemas";
 
 type GameActions = {
   assignSatellite: (playerId: string, satelliteId: string) => void;
@@ -8,11 +8,14 @@ type GameActions = {
   addScore: (playerId: string, points: number) => void;
   hydrate: (state: GameState) => void;
   reset: () => void;
+  setSatellites: (satellites: Satellite[]) => void;
+  setSelectedSatelliteId: (satelliteId: string | undefined) => void;
 };
 
-export type GameStore = GameState & GameActions;
+type SelectedSatelliteState = { selectedSatelliteId?: string };
+export type GameStore = GameState & SelectedSatelliteState & GameActions;
 
-const initialState: GameState = {
+const initialState: GameState & { selectedSatelliteId?: string } = {
   players: [],
   satellites: [],
   groundStations: [],
@@ -23,6 +26,10 @@ const initialState: GameState = {
 export const useGameStore = create<GameStore>()(
   devtools((set, get) => ({
     ...initialState,
+    selectedSatelliteId: undefined,
+    setSatellites: (satellites) => set(() => ({ satellites })),
+    setSelectedSatelliteId: (satelliteId) =>
+      set(() => ({ selectedSatelliteId: satelliteId })),
     assignSatellite: (playerId, satelliteId) => {
       set((state) => ({
         players: state.players.map((p: Player) =>
