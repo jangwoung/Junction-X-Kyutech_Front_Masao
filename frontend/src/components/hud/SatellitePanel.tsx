@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useGameStore } from "@/stores/gameStore";
 import { useSatellitePanelData } from "@/lib/hooks/useSatellitePanelData";
+import { DebrisThreat } from "@/app/home/components/types";
+import { generateMockDebrisData } from "@/app/home/components/utils";
 
 type MaybeStr = string | number | undefined | null;
 
@@ -66,6 +68,11 @@ export default function SatellitePanel() {
   const selectedSatelliteId = useGameStore((s) => s.selectedSatelliteId);
   const setSelectedSatelliteId = useGameStore((s) => s.setSelectedSatelliteId);
 
+  // デブリ情報の状態管理
+  const [debris, setDebris] = useState<DebrisThreat[]>([]);
+  const [debrisLoading, setDebrisLoading] = useState(true);
+  const mountedRef = useRef(true);
+
   const selected = useMemo(
     () => satellites.find((s) => s.id === selectedSatelliteId),
     [satellites, selectedSatelliteId]
@@ -114,6 +121,61 @@ export default function SatellitePanel() {
       setSelectedSatelliteId(defaultSatelliteId);
     }
   }, [selectedSatelliteId, defaultSatelliteId, setSelectedSatelliteId]);
+
+  // デブリ情報の取得
+  useEffect(() => {
+    const controller = new AbortController();
+    const base = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+
+    mountedRef.current = true;
+    setDebrisLoading(true);
+
+    fetch(`${base}/api/v1/mission/debris/demo/threats`, {
+      signal: controller.signal,
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        return res.json();
+      })
+      .then((json) => {
+        const items: DebrisThreat[] = json?.threats ?? [];
+
+        // データが空または無効な場合、モックデータを生成
+        let finalItems = items;
+        if (
+          items.length === 0 ||
+          !items.some((item) => item.position && item.velocity)
+        ) {
+          finalItems = generateMockDebrisData();
+        }
+
+        if (mountedRef.current) {
+          setDebris(finalItems);
+        }
+      })
+      .catch((err) => {
+        if (err.name === "AbortError") {
+          return;
+        }
+        console.error("デブリデータ取得エラー:", err);
+
+        if (mountedRef.current) {
+          setDebris(generateMockDebrisData());
+        }
+      })
+      .finally(() => {
+        if (mountedRef.current) {
+          setDebrisLoading(false);
+        }
+      });
+
+    return () => {
+      controller.abort();
+      mountedRef.current = false;
+    };
+  }, []);
 
   const effectiveSatelliteId = selectedSatelliteId || defaultSatelliteId;
   const panel = useSatellitePanelData(effectiveSatelliteId);
@@ -219,6 +281,35 @@ export default function SatellitePanel() {
             : "— kg"}
         </span>
       </div>
+      {/* デブリ情報 */}
+      {!debrisLoading && debris.length > 0 && (
+        <>
+          <div className="flex items-center">
+            <span className="text-xs text-gray-300">デブリ衝突確率</span>
+            <span className="mx-1 text-gray-500">|</span>
+            <span className="font-mono">
+              {" "}
+              50%:{" "}
+              {
+                debris.filter((d) => (d.collision_probability ?? 0) > 0.5)
+                  .length
+              }
+            </span>
+          </div>
+          <div className="flex items-center">
+            <span className="text-xs text-gray-300">1時間以内接近</span>
+            <span className="mx-1 text-gray-500">|</span>
+            <span className="font-mono">
+              {" "}
+              {
+                debris.filter((d) => (d.time_to_closest ?? Infinity) < 3600000)
+                  .length
+              }
+              個
+            </span>
+          </div>
+        </>
+      )}
     </div>
   );
 }
