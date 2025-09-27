@@ -58,7 +58,7 @@ export default function HomeScene() {
     <div style={{ width: '100vw', height: '100vh', position: 'relative', backgroundColor: '#111827' }}>
       <ErrorBoundary>
         <Canvas 
-          camera={{ position: [0, 0, 4], fov: 50 }}
+          camera={{ position: [0, 0, 10], fov: 50 }}
         >
           <ambientLight intensity={1.5} /> 
           <directionalLight position={[5, 5, 5]} intensity={1.5} /> 
