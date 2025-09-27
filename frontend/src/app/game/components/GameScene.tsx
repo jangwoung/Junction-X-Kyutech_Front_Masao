@@ -11,7 +11,6 @@ import { CameraTracker, CameraDisplay } from "./CameraInfo";
 const EARTH_TEXTURE_PATH = '/textures/earth_map.avif';
 const EARTH_BUMP_PATH = '/textures/earth_bump.jpg';
 
-// ローディング中に表示するコンポーネント
 function Loader() {
   return (
     <Html center>
@@ -20,10 +19,8 @@ function Loader() {
   );
 }
 
-// 地球モデルのコンポーネント
 function Earth() {
   const earthRef = useRef<THREE.Mesh>(null!);
-  
   const [colorMap, bumpMap] = useLoader(THREE.TextureLoader, [EARTH_TEXTURE_PATH, EARTH_BUMP_PATH]);
 
   colorMap.wrapS = THREE.RepeatWrapping;
@@ -31,7 +28,6 @@ function Earth() {
   colorMap.repeat.set(1, 1);
   colorMap.offset.set(0, 0);
 
-  // フレームごとに地球を回転させる
   useFrame(() => {
     if (earthRef.current) {
         earthRef.current.rotation.y += 0.002;
@@ -50,37 +46,50 @@ function Earth() {
   );
 }
 
-// カメラを自動で周回させるコンポーネント
-function CameraAnimation() {
-  // useFrameフック内でカメラやシーンの状態を取得するためにuseThreeを使用
+function OrbitingSatelliteCamera({ targetY, controlsRef }: { targetY: number, controlsRef: React.RefObject<OrbitControlsImpl> }) {
   const { camera } = useThree();
-  const target = new THREE.Vector3(0, 1, 0); // 注視点は固定
+  const targetLookAt = new THREE.Vector3(0, 0, 0);
 
-  // state.clock.getElapsedTime() でコンポーネントがマウントされてからの経過時間を取得
   useFrame((state) => {
     const time = state.clock.getElapsedTime();
     
-    // 円軌道の計算
-    // X座標をcosで、Z座標をsinで動かすことで、Y軸周りの円運動を実現
-    const radius = 4; // 周回半径
-    camera.position.x = Math.cos(time * 0.5) * radius; // timeに乗算する値で速度調整
-    camera.position.z = Math.sin(time * 0.5) * radius;
+    const radius = 4;
+    camera.position.x = Math.cos(time * 0.3) * radius;
+    camera.position.z = Math.sin(time * 0.3) * radius;
     
-    // Y座標は固定
-    camera.position.y = 1;
+    camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetY, 0.01);
     
-    camera.lookAt(target);
+    camera.lookAt(targetLookAt);
+
+    if (controlsRef.current) {
+      controlsRef.current.update();
+    }
   });
 
   return null;
 }
 
-
-// メインのシーンコンポーネント
 export default function GameScene() {
   const [camPos, setCamPos] = useState(new THREE.Vector3());
   const [camRot, setCamRot] = useState(new THREE.Euler());
   const [hasMounted, setHasMounted] = useState(false);
+  const [targetCameraY, setTargetCameraY] = useState(1);
+  const controlsRef = useRef<OrbitControlsImpl>(null!);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const step = 1.0;
+      if (event.key === 'ArrowUp') {
+        setTargetCameraY(y => y + step);
+      } else if (event.key === 'ArrowDown') {
+        setTargetCameraY(y => y - step);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   useEffect(() => {
     setHasMounted(true);
@@ -90,7 +99,6 @@ export default function GameScene() {
     <div style={{ width: '100vw', height: '100vh', position: 'relative', backgroundColor: '#111827' }}>
       <ErrorBoundary>
         <Canvas 
-          // カメラの初期位置はCameraAnimationコンポーネントが上書きするため、ここでは重要ではない
           camera={{ position: [0, 1, 4], fov: 50 }}
         >
           <ambientLight intensity={1.5} /> 
@@ -100,18 +108,13 @@ export default function GameScene() {
             <Earth />
           </Suspense>
           
-          {/* OrbitControlsはユーザー操作を可能にする。
-              自動アニメーションと共存させる場合、ユーザーが操作したらアニメーションを止めるといった制御が必要になることがあるが、
-              今回は自動アニメーションを優先させる。
-              もしユーザー操作もさせたい場合は、enableZoom={false}などを追加すると良い。
-           */}
           <OrbitControls 
+            ref={controlsRef}
             enableDamping 
-            target={[0, 1, 0]}
+            target={[0, 0, 0]}
           />
 
-          {/* 2. 作成したカメラアニメーションコンポーネントをシーンに追加 */}
-          <CameraAnimation />
+          <OrbitingSatelliteCamera targetY={targetCameraY} controlsRef={controlsRef} />
 
           <CameraTracker setPosition={setCamPos} setRotation={setCamRot} />
         </Canvas>
