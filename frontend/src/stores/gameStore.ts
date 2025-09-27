@@ -24,7 +24,7 @@ const initialState: GameState & { selectedSatelliteId?: string } = {
 };
 
 export const useGameStore = create<GameStore>()(
-  devtools((set, get) => ({
+  devtools((set) => ({
     ...initialState,
     selectedSatelliteId: undefined,
     setSatellites: (satellites) => set(() => ({ satellites })),
