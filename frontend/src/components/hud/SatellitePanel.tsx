@@ -1,16 +1,147 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useGameStore } from "@/stores/gameStore";
+import { useSatellitePanelData } from "@/lib/hooks/useSatellitePanelData";
+
+type MaybeStr = string | number | undefined | null;
+
+function toLowerStr(v: MaybeStr) {
+  return typeof v === "string" ? v.toLowerCase() : String(v ?? "");
+}
 
 export default function SatellitePanel() {
   const satellites = useGameStore((s) => s.satellites);
   const selectedSatelliteId = useGameStore((s) => s.selectedSatelliteId);
+  const setSelectedSatelliteId = useGameStore((s) => s.setSelectedSatelliteId);
 
   const selected = useMemo(
     () => satellites.find((s) => s.id === selectedSatelliteId),
     [satellites, selectedSatelliteId]
   );
+
+  // Space-Track 準拠の候補（優先順）
+  const HIMAWARI_PRIORITY = [
+    // 1) SATCAT (NORAD)
+    { field: "noradId", value: 41836 }, // Himawari-9
+    { field: "satcat", value: 41836 },
+    { field: "norad", value: 41836 },
+
+    { field: "noradId", value: 40267 }, // Himawari-8
+    { field: "satcat", value: 40267 },
+    { field: "norad", value: 40267 },
+
+    // 2) OBJECT_ID (COSPAR)
+    { field: "objectId", value: "2016-064A" }, // H-9
+    { field: "cosparId", value: "2016-064A" },
+    { field: "object_id", value: "2016-064A" },
+
+    { field: "objectId", value: "2014-060A" }, // H-8
+    { field: "cosparId", value: "2014-060A" },
+    { field: "object_id", value: "2014-060A" },
+
+    // 3) OBJECT_NAME（Space-Track の名前表記）
+    { field: "objectName", value: "HIMAWARI-9" },
+    { field: "name", value: "HIMAWARI-9" },
+
+    { field: "objectName", value: "HIMAWARI-8" },
+    { field: "name", value: "HIMAWARI-8" },
+
+    // 4) 自由表記のゆらぎ（id/nameに含まれる）
+    { field: "id", value: "himawari-9" },
+    { field: "id", value: "himawari9" },
+    { field: "name", value: "himawari 9" },
+
+    { field: "id", value: "himawari-8" },
+    { field: "id", value: "himawari8" },
+    { field: "name", value: "himawari 8" },
+
+    // 5) 最後の保険：'himawari' 部分一致
+    { field: "id", value: "himawari" },
+    { field: "name", value: "himawari" },
+  ] as const;
+
+  const defaultSatelliteId = useMemo(() => {
+    // .env 明示があれば最優先
+    const fromEnv = process.env.NEXT_PUBLIC_DEFAULT_SATELLITE_ID as
+      | string
+      | undefined;
+    if (fromEnv) return fromEnv;
+
+    // STARLINK-32713 を最優先で試す
+    const starlinkExact = satellites.find(
+      (s: any) =>
+        toLowerStr(s?.id) === "starlink-32713" ||
+        toLowerStr(s?.name) === "starlink-32713"
+    );
+    if (starlinkExact) return starlinkExact.id as string;
+    // ストア未取得でもバックエンドに存在する想定で固定IDを返す
+    const prefer = "STARLINK-32713";
+    if (prefer) return prefer;
+
+    // 次点：既存Himawari優先ルール
+    for (const rule of HIMAWARI_PRIORITY) {
+      const hit = satellites.find((s: any) => {
+        const v: MaybeStr = s?.[rule.field as keyof typeof s];
+        if (v == null) return false;
+        if (typeof rule.value === "number") {
+          const num = typeof v === "number" ? v : Number(v);
+          return num === rule.value;
+        }
+        const vs = toLowerStr(v);
+        const rs = String(rule.value).toLowerCase();
+        return rs === "himawari" ? vs.includes(rs) : vs === rs;
+      });
+      if (hit) return hit.id as string;
+    }
+
+    // 最後のフォールバック：先頭
+    return satellites[0]?.id;
+  }, [satellites]);
+
+  useEffect(() => {
+    if (!selectedSatelliteId && defaultSatelliteId) {
+      setSelectedSatelliteId(defaultSatelliteId);
+    }
+  }, [selectedSatelliteId, defaultSatelliteId, setSelectedSatelliteId]);
+
+  const effectiveSatelliteId = selectedSatelliteId || defaultSatelliteId;
+  const panel = useSatellitePanelData(effectiveSatelliteId);
+  if (panel.isLoading) {
+    return (
+      <div className="flex flex-col gap-1">
+        <div className="text-xs text-gray-300">Loading...</div>
+      </div>
+    );
+  }
+  if (panel.isError) {
+    return (
+      <div className="flex flex-col gap-1">
+        <div className="text-xs text-red-400">
+          Error: {panel.errorMessage || "データ取得に失敗しました"}
+        </div>
+      </div>
+    );
+  }
+  const altitudeText =
+    panel.altitudeKm != null ? panel.altitudeKm.toFixed(1) : "—";
+  const visibilityText = panel.visibility ?? "—";
+  const nextPassText = panel.nextPass
+    ? new Date(panel.nextPass).toLocaleTimeString("ja-JP", {
+        timeZone: "Asia/Tokyo",
+      })
+    : "—";
+  const r = panel.status?.status?.attitude?.roll;
+  const p = panel.status?.status?.attitude?.pitch;
+  const y = panel.status?.status?.attitude?.yaw;
+  const attitudeText =
+    r != null && p != null && y != null
+      ? `${r.toFixed(1)} / ${p.toFixed(1)} / ${y.toFixed(1)}`
+      : "— / — / —";
+  const powerText =
+    panel.status?.status?.power != null
+      ? `${Math.round(panel.status.status.power)}%`
+      : "—%";
 
   return (
     <div className="flex flex-col gap-1">
@@ -29,42 +160,54 @@ export default function SatellitePanel() {
             <span className="text-gray-300">)</span>
           </span>
         ) : (
-          <span className="text-gray-300">None</span>
+          <span className="text-gray-300">
+            {effectiveSatelliteId ?? "None"}
+          </span>
         )}
       </div>
       <div className="flex items-center">
         <span className="text-xs text-gray-300">Altitude</span>
         <span className="mx-1 text-gray-500">|</span>
-        <span className="font-mono">—</span>
+        <span className="font-mono">{altitudeText}</span>
         <span className="text-xs text-gray-300"> km</span>
       </div>
       <div className="flex items-center">
         <span className="text-xs text-gray-300">Visibility</span>
         <span className="mx-1 text-gray-500">|</span>
-        <span>In-View / Out-of-View</span>
+        <span>{visibilityText}</span>
         <span className="text-xs text-gray-300"> @ </span>
-        <span className="font-mono">—</span>
+        <span className="font-mono">{nextPassText}</span>
       </div>
       <div className="flex items-center">
-        <span className="text-xs text-gray-300">Elevation</span>
+        <span className="text-xs text-gray-300">Speed</span>
         <span className="mx-1 text-gray-500">|</span>
-        <span className="font-mono">—</span>
-        <span className="text-xs text-gray-300"> °</span>
+        <span className="font-mono">
+          {panel.orbit?.orbital_speed != null
+            ? panel.orbit.orbital_speed.toFixed(2)
+            : "—"}
+        </span>
+        <span className="text-xs text-gray-300"> km/s</span>
       </div>
       <div className="flex items-center">
         <span className="text-xs text-gray-300">Attitude R/P/Y</span>
         <span className="mx-1 text-gray-500">|</span>
-        <span className="font-mono">— / — / —</span>
+        <span className="font-mono">{attitudeText}</span>
       </div>
       <div className="flex items-center">
         <span className="text-xs text-gray-300">Power</span>
         <span className="mx-1 text-gray-500">|</span>
-        <span className="font-mono">—%</span>
+        <span className="font-mono">{powerText}</span>
       </div>
       <div className="flex items-center">
-        <span className="text-xs text-gray-300">Comms</span>
+        <span className="text-xs text-gray-300">Health/Fuel</span>
         <span className="mx-1 text-gray-500">|</span>
-        <span className="font-mono">Down 0/0 kbps</span>
+        <span className="font-mono">{panel.status?.status?.health ?? "—"}</span>
+        <span className="text-xs text-gray-300"> / </span>
+        <span className="font-mono">
+          {panel.status?.status?.fuel != null
+            ? `${panel.status.status.fuel.toFixed(1)} kg`
+            : "— kg"}
+        </span>
       </div>
     </div>
   );
