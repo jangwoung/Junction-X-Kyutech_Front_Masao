@@ -4,6 +4,7 @@ import TimePanel from "./TimePanel";
 import SatellitePanel from "./SatellitePanel";
 import MissionProgress from "./MissionProgress";
 import GroundStationChat from "@/components/GroundStationChat";
+import NavigationButtons from "./NavigationButtons";
 
 type Props = {
   className?: string;
@@ -18,9 +19,12 @@ export default function Hud({ className, sessionEndsAtMs }: Props) {
       }`}
     >
       <div className="flex justify-between gap-8 text-sm rounded-lg">
-        <div className="flex flex-col gap-1 min-w-[16rem] backdrop-blur">
+        <div className="flex flex-col gap-1 min-w-[4rem] backdrop-blur">
           <TimePanel sessionEndsAtMs={sessionEndsAtMs} />
           <SatellitePanel />
+          <div className="mt-auto">
+            <NavigationButtons />
+          </div>
         </div>
         <div className="flex justify-between gap-8 text-sm rounded-lg">
           <GroundStationChat />

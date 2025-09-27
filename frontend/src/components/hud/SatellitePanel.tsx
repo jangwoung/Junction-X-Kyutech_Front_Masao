@@ -182,14 +182,14 @@ export default function SatellitePanel() {
   if (panel.isLoading) {
     return (
       <div className="flex flex-col gap-1">
-        <div className="text-xs text-gray-300">Loading...</div>
+        <div className="text-[10px] text-gray-300">Loading...</div>
       </div>
     );
   }
   if (panel.isError) {
     return (
       <div className="flex flex-col gap-1">
-        <div className="text-xs text-red-400">
+        <div className="text-[10px] text-red-400">
           Error: {panel.errorMessage || "データ取得に失敗しました"}
         </div>
       </div>
@@ -218,76 +218,79 @@ export default function SatellitePanel() {
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center truncate">
-        <span className="text-xs text-gray-300">Satellite</span>
+        <span className="text-[10px] text-gray-300">Satellite</span>
         <span className="mx-1 text-gray-500">|</span>
         {selected ? (
           <span className="truncate">
-            <span title={selected.id} className="font-medium">
+            <span title={selected.id} className="font-medium text-[10px]">
               {selected.name}
             </span>
-            <span className="text-gray-300"> (</span>
-            <span className="font-mono text-xs" title={selected.id}>
+            <span className="text-gray-300 text-[10px]"> (</span>
+            <span className="font-mono text-[10px]" title={selected.id}>
               {selected.id.slice(0, 8)}
             </span>
-            <span className="text-gray-300">)</span>
+            <span className="text-gray-300 text-[10px]">)</span>
           </span>
         ) : (
-          <span className="text-gray-300">
+          <span className="text-gray-300 text-[10px]">
             {effectiveSatelliteId ?? "None"}
           </span>
         )}
       </div>
       <div className="flex items-center">
-        <span className="text-xs text-gray-300">Altitude</span>
+        <span className="text-[10px] text-gray-300">Altitude</span>
         <span className="mx-1 text-gray-500">|</span>
-        <span className="font-mono">{altitudeText}</span>
-        <span className="text-xs text-gray-300"> km</span>
+        <span className="font-mono text-[10px]">{altitudeText}</span>
+        <span className="text-[10px] text-gray-300"> km</span>
       </div>
       <div className="flex items-center">
-        <span className="text-xs text-gray-300">Visibility</span>
+        <span className="text-[10px] text-gray-300">Visibility</span>
         <span className="mx-1 text-gray-500">|</span>
-        <span>{visibilityText}</span>
-        <span className="text-xs text-gray-300"> @ </span>
-        <span className="font-mono">{nextPassText}</span>
+        <span className="text-[10px]">{visibilityText}</span>
+        <span className="text-[10px] text-gray-300"> @ </span>
+        <span className="font-mono text-[10px]">{nextPassText}</span>
       </div>
       <div className="flex items-center">
-        <span className="text-xs text-gray-300">Speed</span>
+        <span className="text-[10px] text-gray-300">Speed</span>
         <span className="mx-1 text-gray-500">|</span>
-        <span className="font-mono">
+        <span className="font-mono text-[10px]">
           {panel.orbit?.orbital_speed != null
             ? panel.orbit.orbital_speed.toFixed(2)
             : "—"}
         </span>
-        <span className="text-xs text-gray-300"> km/s</span>
+        <span className="text-[10px] text-gray-300"> km/s</span>
       </div>
       <div className="flex items-center">
-        <span className="text-xs text-gray-300">Attitude R/P/Y</span>
+        <span className="text-[10px] text-gray-300">Attitude R/P/Y</span>
         <span className="mx-1 text-gray-500">|</span>
-        <span className="font-mono">{attitudeText}</span>
+        <span className="font-mono text-[10px]">{attitudeText}</span>
       </div>
       <div className="flex items-center">
-        <span className="text-xs text-gray-300">Power</span>
+        <span className="text-[10px] text-gray-300">Power</span>
         <span className="mx-1 text-gray-500">|</span>
-        <span className="font-mono">{powerText}</span>
+        <span className="font-mono text-[10px]">{powerText}</span>
       </div>
       <div className="flex items-center">
-        <span className="text-xs text-gray-300">Health/Fuel</span>
+        <span className="text-[10px] text-gray-300">Health/Fuel</span>
         <span className="mx-1 text-gray-500">|</span>
-        <span className="font-mono">{panel.status?.status?.health ?? "—"}</span>
-        <span className="text-xs text-gray-300"> / </span>
-        <span className="font-mono">
+        <span className="font-mono text-[10px]">
+          {panel.status?.status?.health ?? "—"}
+        </span>
+        <span className="text-[10px] text-gray-300"> / </span>
+        <span className="font-mono text-[10px]">
           {panel.status?.status?.fuel != null
             ? `${panel.status.status.fuel.toFixed(1)} kg`
             : "— kg"}
         </span>
       </div>
-      {/* デブリ情報 */}
       {!debrisLoading && debris.length > 0 && (
         <>
           <div className="flex items-center">
-            <span className="text-xs text-gray-300">Debris Collision Risk</span>
+            <span className="text-[10px] text-gray-300">
+              Debris Collision Risk
+            </span>
             <span className="mx-1 text-gray-500">|</span>
-            <span className="font-mono">
+            <span className="font-mono text-[10px]">
               {" "}
               50%:{" "}
               {
@@ -297,9 +300,9 @@ export default function SatellitePanel() {
             </span>
           </div>
           <div className="flex items-center">
-            <span className="text-xs text-gray-300">Close Approach 1h</span>
+            <span className="text-[10px] text-gray-300">Close Approach 1h</span>
             <span className="mx-1 text-gray-500">|</span>
-            <span className="font-mono">
+            <span className="font-mono text-[10px]">
               {" "}
               {
                 debris.filter((d) => (d.time_to_closest ?? Infinity) < 3600000)
