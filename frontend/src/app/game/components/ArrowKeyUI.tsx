@@ -12,7 +12,7 @@ interface ArrowKeyUIProps {
  * 押された矢印キーを視覚的に表示し、クリック長押しにも反応するUIコンポーネント
  */
 export function ArrowKeyUI({ mode }: ArrowKeyUIProps) {
-  // 現在押されているキーの名前を保持するState（例: 'ArrowUp'）
+  // 現在押されているキーの名前を保持するState
   const [activeKey, setActiveKey] = useState<string | null>(null);
   // setIntervalのIDを保持するためのuseRef
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -93,12 +93,12 @@ export function ArrowKeyUI({ mode }: ArrowKeyUIProps) {
     alignItems: 'center',
     width: '50px',
     height: '50px',
-    margin: '5px',
+    margin: '15px',
     fontSize: '24px',
     backgroundColor: '#333',
     color: 'white',
     border: '1px solid #555',
-    borderRadius: '8px',
+    borderRadius: '5px',
     transition: 'all 0.1s ease',
     userSelect: 'none',
     cursor: 'pointer',
@@ -106,8 +106,8 @@ export function ArrowKeyUI({ mode }: ArrowKeyUIProps) {
 
   const containerStyle: React.CSSProperties = {
     position: 'absolute',
-    bottom: '20px',
-    right: '20px',
+    bottom: '40px',
+    right: '60px',
     zIndex: 10,
     display: 'flex',
     flexDirection: 'column',
