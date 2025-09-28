@@ -10,8 +10,17 @@ interface MultipleSatelliteOrbitsResult {
   errors: { id: string; error: Error }[];
 }
 
+function getBaseUrl() {
+  if (typeof window === "undefined")
+    return process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+  return (
+    (process.env.NEXT_PUBLIC_BACKEND_URL as string) || "http://localhost:8080"
+  );
+}
+
 async function fetchJson<T>(path: string): Promise<T> {
-  const res = await fetch(path);
+  const baseUrl = getBaseUrl();
+  const res = await fetch(`${baseUrl}${path}`, { cache: "no-store" });
   if (!res.ok) {
     throw new Error(`Request failed: ${res.status} ${res.statusText}`);
   }

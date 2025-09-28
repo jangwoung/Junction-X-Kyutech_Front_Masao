@@ -2,7 +2,6 @@
 
 import TimePanel from "./TimePanel";
 import SatellitePanel from "./SatellitePanel";
-import MissionProgress from "./MissionProgress";
 import GroundStationChat from "@/components/GroundStationChat";
 import NavigationButtons from "./NavigationButtons";
 
@@ -30,8 +29,6 @@ export default function Hud({ className, sessionEndsAtMs }: Props) {
           <GroundStationChat />
         </div>
       </div>
-
-      <MissionProgress />
     </div>
   );
 }

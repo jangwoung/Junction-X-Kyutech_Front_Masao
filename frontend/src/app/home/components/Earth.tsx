@@ -36,20 +36,49 @@ export function Earth() {
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
   const [time, setTime] = useState(new Date());
   const [globeSize, setGlobeSize] = useState({ width: 800, height: 600 });
-  const [selectedSatellite] = useState<string | null>(null);
-
-  // 衛星データを取得
-  const satellites = useGameStore(
-    (s: { satellites: Array<{ id: string }> }) => s.satellites
+  const [selectedSatellite, setSelectedSatellite] = useState<string | null>(
+    null
   );
-  const selectedSatelliteId = satellites[0]?.id; // 最初の衛星を選択（後で改善可能）
-  const satelliteData = useSatellitePanelData(selectedSatelliteId);
+  const selectedSatelliteRef = useRef<string | null>(null);
+  useEffect(() => {
+    selectedSatelliteRef.current = selectedSatellite;
+  }, [selectedSatellite]);
+  const cameraCurrentRef = useRef<{
+    lat: number;
+    lng: number;
+    altitude: number;
+  } | null>(null);
+  // 地球自転角（ラジアン）を保持（世界座標系でのオフセット計算に使用）
+  const earthRotationRef = useRef(0);
+
+  // 衛星データを取得（ストアの選択IDを単一情報源に）
+  const storeSelectedSatelliteId = useGameStore(
+    (s: { selectedSatelliteId?: string }) => s.selectedSatelliteId
+  );
+  const setSelectedSatelliteId = useGameStore(
+    (s: { setSelectedSatelliteId: (id: string | undefined) => void }) =>
+      s.setSelectedSatelliteId
+  );
+  const satelliteData = useSatellitePanelData(storeSelectedSatelliteId);
 
   // 利用可能な衛星一覧を取得（最初の3つを使用）
   const { satellites: availableSatellites } = useAvailableSatellites();
   const selectedSatelliteIds = availableSatellites
+    .filter((sat: { id: string }) => {
+      const id = sat.id.toLowerCase().replace(/[^a-z0-9]/g, "");
+      return id !== "landsat8" && id !== "goes16";
+    })
     .slice(0, 3)
     .map((sat: { id: string }) => sat.id);
+
+  // ストアの選択と同期して追従を有効化
+  useEffect(() => {
+    if (storeSelectedSatelliteId) {
+      setSelectedSatellite(storeSelectedSatelliteId);
+    } else {
+      setSelectedSatellite(null);
+    }
+  }, [storeSelectedSatelliteId]);
 
   // 複数の衛星の軌道データを取得
   const { satelliteOrbits } = useMultipleSatelliteOrbits(selectedSatelliteIds);
@@ -71,10 +100,10 @@ export function Earth() {
       position: { x: 0, y: 0, z: 0 },
     },
     {
-      satellite_id: "landsat8",
+      satellite_id: "worldview3",
       timestamp: new Date().toISOString(),
-      altitude: 705,
-      orbital_speed: 7.5,
+      altitude: 617,
+      orbital_speed: 7.56,
       position: { x: 0, y: 0, z: 0 },
     },
   ];
@@ -85,12 +114,36 @@ export function Earth() {
       ? (satelliteOrbits as OrbitResponse[])
       : defaultSatellites;
 
+  // GOES16 を除外した配列（表示・描画用に採用）
+  const filteredActiveSatellites: OrbitResponse[] = activeSatellites.filter(
+    (s: OrbitResponse) =>
+      s &&
+      typeof s.satellite_id === "string" &&
+      s.satellite_id.toLowerCase().replace(/[^a-z0-9]/g, "") !== "goes16"
+  );
+
+  // もし選択中が GOES16 なら選択解除
+  useEffect(() => {
+    if (!selectedSatellite) return;
+    const id = selectedSatellite.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (id === "goes16") {
+      setSelectedSatellite(null);
+      setSelectedSatelliteId(undefined);
+    }
+  }, [selectedSatellite, setSelectedSatelliteId]);
+
+  // 衛星IDを正規化（大文字小文字やハイフン差異を吸収）
+  const normalizeSatelliteId = (id: string): string =>
+    id.toLowerCase().replace(/[^a-z0-9]/g, "");
+
   // 衛星の現在位置を取得する関数
   const getSatelliteCurrentPosition = useCallback((satelliteId: string) => {
     let altitude = 400;
     let inclination = 0;
 
-    switch (satelliteId) {
+    const id = normalizeSatelliteId(satelliteId);
+
+    switch (id) {
       case "himawari8":
         altitude = 35786;
         inclination = 0;
@@ -119,45 +172,25 @@ export function Earth() {
     return { lat, lng, altitude: altitude / 1000 }; // km単位に変換
   }, []);
 
+  // カメラを指定の衛星へ移動し選択状態を更新
+  const moveCameraToSatellite = (satelliteId: string) => {
+    if (!globeRef.current) return;
+    const satellitePos = getSatelliteCurrentPosition(satelliteId);
+    const cameraPosition = {
+      lat: satellitePos.lat,
+      lng: satellitePos.lng,
+      altitude: Math.max(0.5, satellitePos.altitude * 0.1),
+    };
+    globeRef.current.pointOfView(cameraPosition, 2000);
+    setSelectedSatellite(satelliteId);
+    setSelectedSatelliteId(satelliteId);
+    cameraCurrentRef.current = cameraPosition;
+  };
+
   // カメラを衛星の位置に移動する関数（選択状態も管理）
-  // const moveCameraToSatellite = (satelliteId: string) => {
-  //   console.log(`Selecting satellite: ${satelliteId}`);
+  // 上で定義済みの moveCameraToSatellite を使用
 
-  //   if (globeRef.current) {
-  //     const satellitePos = getSatelliteCurrentPosition(satelliteId);
-
-  //     // 衛星の位置にカメラを移動（少し離れた位置から見る）
-  //     const cameraPosition = {
-  //       lat: satellitePos.lat,
-  //       lng: satellitePos.lng,
-  //       altitude: Math.max(0.5, satellitePos.altitude * 0.1), // 衛星の10%の距離から見る
-  //     };
-
-  //     console.log(`Moving camera to:`, { satellitePos, cameraPosition });
-
-  //     globeRef.current.pointOfView(cameraPosition, 2000); // 2秒でアニメーション
-
-  //     // 選択状態を更新
-  //     setSelectedSatellite(satelliteId);
-  //     console.log(`Selected satellite set to: ${satelliteId}`);
-  //   }
-  // };
-
-  // 選択された衛星にカメラを追従させる関数
-  // const followSelectedSatellite = () => {
-  //   if (globeRef.current && selectedSatellite) {
-  //     const satellitePos = getSatelliteCurrentPosition(selectedSatellite);
-
-  //     // 衛星の位置にカメラを追従（少し離れた位置から見る）
-  //     const cameraPosition = {
-  //       lat: satellitePos.lat,
-  //       lng: satellitePos.lng,
-  //       altitude: Math.max(0.5, satellitePos.altitude * 0.1), // 衛星の10%の距離から見る
-  //     };
-
-  //     globeRef.current.pointOfView(cameraPosition, 100); // 短いアニメーションで追従
-  //   }
-  // };
+  // 旧: intervalベースの追従は廃止し、rAFで滑らかに追従
 
   // 時間を更新して昼夜サイクルを実装
   useEffect(() => {
@@ -168,40 +201,7 @@ export function Earth() {
     return () => clearInterval(interval);
   }, []);
 
-  // 選択された衛星に追従するためのuseEffect
-  useEffect(() => {
-    console.log(`Selected satellite changed to: ${selectedSatellite}`);
-
-    if (!selectedSatellite || !globeRef.current) {
-      console.log("No satellite selected or globe not ready");
-      return;
-    }
-
-    console.log("Starting follow interval for:", selectedSatellite);
-
-    const followInterval = setInterval(() => {
-      if (globeRef.current && selectedSatellite) {
-        const satellitePos = getSatelliteCurrentPosition(selectedSatellite);
-
-        const cameraPosition = {
-          lat: satellitePos.lat,
-          lng: satellitePos.lng,
-          altitude: Math.max(0.5, satellitePos.altitude * 0.1),
-        };
-
-        console.log(`Following ${selectedSatellite}:`, {
-          satellitePos,
-          cameraPosition,
-        });
-        globeRef.current.pointOfView(cameraPosition);
-      }
-    }, 200); // 200ms間隔で追従
-
-    return () => {
-      console.log("Clearing follow interval");
-      clearInterval(followInterval);
-    };
-  }, [selectedSatellite, getSatelliteCurrentPosition]);
+  // 選択衛星に対するrAFベースの滑らかな追従は onGlobeReady 内で更新
 
   // ウィンドウサイズに応じて地球のサイズを調整
   useEffect(() => {
@@ -300,17 +300,101 @@ export function Earth() {
     return colors[index % colors.length];
   };
 
+  // カメラのローカル軸で回転（yaw/pitch）: カメラ位置固定・targetのみ回転
+  const rotateLocal = useCallback((type: "yaw" | "pitch", deg: number) => {
+    // 追従解除
+    selectedSatelliteRef.current = null;
+    setSelectedSatellite(null);
+    const controls = globeRef.current?.controls?.();
+    const camera = globeRef.current?.camera?.() as
+      | THREE.PerspectiveCamera
+      | undefined;
+    if (!controls || !camera) return;
+    const ctrl: any = controls as any;
+    const target: THREE.Vector3 =
+      (ctrl.target as THREE.Vector3) || new THREE.Vector3(0, 0, 0);
+
+    const origin = camera.position.clone();
+    const dir = target.clone().sub(origin); // カメラ→ターゲット
+    const distance = dir.length();
+    if (distance < 1e-6) return;
+    dir.normalize();
+
+    // カメラのローカル軸
+    const forward = new THREE.Vector3();
+    camera.getWorldDirection(forward).normalize();
+    const upAxis = camera.up.clone().normalize();
+    const rightAxis = new THREE.Vector3()
+      .crossVectors(forward, upAxis)
+      .normalize();
+
+    const axis = type === "yaw" ? upAxis : rightAxis;
+    const q = new THREE.Quaternion().setFromAxisAngle(
+      axis,
+      THREE.MathUtils.degToRad(deg)
+    );
+    const newDir = dir.clone().applyQuaternion(q).normalize();
+    const newTarget = origin.clone().add(newDir.multiplyScalar(distance));
+
+    if (type === "pitch") {
+      // ピッチでは up も回転させて姿勢維持
+      camera.up.copy(upAxis.clone().applyQuaternion(q).normalize());
+    }
+
+    if (ctrl.target?.copy) ctrl.target.copy(newTarget);
+    camera.lookAt(newTarget);
+    camera.updateMatrixWorld();
+    ctrl.update?.();
+    return;
+  }, []);
+
+  // カメラ回転（ローカル軸: yaw/pitch, 視線軸: roll）
+  const rotateYaw = useCallback(
+    (deg: number) => rotateLocal("yaw", deg),
+    [rotateLocal]
+  );
+  const rotatePitch = useCallback(
+    (deg: number) => rotateLocal("pitch", deg),
+    [rotateLocal]
+  );
+  const rotateRoll = useCallback((deg: number) => {
+    // 追従を停止
+    selectedSatelliteRef.current = null;
+    setSelectedSatellite(null);
+    const controls = globeRef.current?.controls?.();
+    const camera = globeRef.current?.camera?.() as
+      | THREE.PerspectiveCamera
+      | undefined;
+    if (!controls || !camera) return;
+    const ctrl: any = controls as any;
+    const target: THREE.Vector3 =
+      (ctrl.target as THREE.Vector3) || new THREE.Vector3(0, 0, 0);
+    // 視線方向を軸としてロール
+    const viewDir = target.clone().sub(camera.position).normalize();
+    const q = new THREE.Quaternion().setFromAxisAngle(
+      viewDir,
+      THREE.MathUtils.degToRad(deg)
+    );
+    camera.up.applyQuaternion(q).normalize();
+    camera.lookAt(target);
+    camera.updateMatrixWorld();
+    ctrl.update?.();
+  }, []);
+
   // 衛星の緯度を計算（時間ベース）
   const calculateSatelliteLatitude = (
     satelliteId: string,
     altitude: number,
     inclination: number
   ): number => {
+    const id = normalizeSatelliteId(satelliteId);
+    // 静止衛星は赤道上（緯度0）
+    if (id === "himawari8" || id === "himawari9" || id === "goes16") {
+      return 0;
+    }
     const time = Date.now() * 0.0001; // 時間を遅くして見やすく
     const orbitalPeriod =
       (2 * Math.PI * Math.sqrt(Math.pow((6371 + altitude) / 6371, 3))) / 24; // 軌道周期
-
-    // 軌道傾斜角に基づく緯度の範囲
     const maxLatitude = inclination;
     return maxLatitude * Math.sin(time * orbitalPeriod);
   };
@@ -321,25 +405,19 @@ export function Earth() {
     altitude: number,
     _inclination: number
   ): number => {
+    const id = normalizeSatelliteId(satelliteId);
+    // 静止衛星は地球固定経度に地球自転角を加えて世界座標へ変換
+    const earthRotationDeg = (earthRotationRef.current * 180) / Math.PI;
+    if (id === "himawari8" || id === "himawari9") {
+      return 140.7 + earthRotationDeg;
+    }
+    if (id === "goes16") {
+      return -75.2 + earthRotationDeg;
+    }
     const time = Date.now() * 0.0001; // 時間を遅くして見やすく
     const orbitalPeriod =
       (2 * Math.PI * Math.sqrt(Math.pow((6371 + altitude) / 6371, 3))) / 24; // 軌道周期
-
-    // 衛星の軌道速度に基づく経度の変化
-    let longitudeOffset = 0;
-    switch (satelliteId) {
-      case "himawari8":
-        longitudeOffset = 140.7; // 東経140.7度の静止軌道
-        break;
-      case "goes16":
-        longitudeOffset = -75.2; // 西経75.2度の静止軌道
-        break;
-      default:
-        longitudeOffset = 0; // 極軌道などは経度が変化
-        break;
-    }
-
-    return longitudeOffset + time * orbitalPeriod * 57.3; // ラジアンを度に変換
+    return time * orbitalPeriod * 57.3; // ラジアンを度に変換
   };
 
   // 衛星の軌道と現在位置を描画
@@ -357,15 +435,17 @@ export function Earth() {
     );
 
     // 軌道データを準備（実際の衛星軌道データに基づく）
-    const orbitPaths = activeSatellites.map(
+    const orbitPaths = filteredActiveSatellites.map(
       (orbit: OrbitResponse, index: number) => {
         // 各衛星の実際の軌道高度を設定
         let actualAltitude = orbit.altitude || 400;
         let orbitalInclination = 0;
 
         // 衛星タイプに応じて実際の軌道パラメータを設定
-        switch (orbit.satellite_id) {
+        const id = normalizeSatelliteId(orbit.satellite_id);
+        switch (id) {
           case "himawari8":
+          case "himawari9":
             actualAltitude = 35786; // 静止軌道
             orbitalInclination = 0;
             break;
@@ -391,7 +471,7 @@ export function Earth() {
         }
 
         return {
-          satelliteId: orbit.satellite_id,
+          satelliteId: id,
           path: generateOrbitPath(
             orbit.satellite_id,
             actualAltitude,
@@ -410,7 +490,7 @@ export function Earth() {
               actualAltitude,
               orbitalInclination
             ),
-            altitude: actualAltitude / 1000, // km単位に変換
+            altitude: actualAltitude, // km単位
           },
           actualAltitude,
           orbitalInclination,
@@ -625,6 +705,7 @@ export function Earth() {
                   ) {
                     // 地球のメッシュを回転（Y軸周り）
                     child.rotation.y += 0.001; // 自転速度（調整可能）
+                    earthRotationRef.current = child.rotation.y;
                   }
 
                   // 衛星の位置をリアルタイム更新
@@ -724,6 +805,29 @@ export function Earth() {
                   }
                 });
 
+                // 選択された衛星にカメラを滑らかに追従
+                const followId = selectedSatelliteRef.current;
+                if (globeRef.current && followId) {
+                  const target = getSatelliteCurrentPosition(followId);
+                  const desired = {
+                    lat: target.lat,
+                    lng: target.lng,
+                    altitude: Math.max(0.5, target.altitude * 0.1),
+                  };
+                  const current =
+                    cameraCurrentRef.current || globeRef.current.pointOfView();
+                  const alpha = 0.12; // 補間係数（小さいほど滑らか）
+                  const next = {
+                    lat: current.lat + (desired.lat - current.lat) * alpha,
+                    lng: current.lng + (desired.lng - current.lng) * alpha,
+                    altitude:
+                      current.altitude +
+                      (desired.altitude - current.altitude) * alpha,
+                  };
+                  globeRef.current.pointOfView(next);
+                  cameraCurrentRef.current = next;
+                }
+
                 animationId = requestAnimationFrame(rotateGlobe);
               };
 
@@ -743,7 +847,7 @@ export function Earth() {
       />
 
       {/* デバッグ情報表示 */}
-      {/* <div
+      <div
         style={{
           position: "absolute",
           top: "10px",
@@ -757,24 +861,43 @@ export function Earth() {
         }}
       >
         <div>API Satellites: {satelliteOrbits.length}</div>
-        <div>Active Satellites: {activeSatellites.length}</div>
+        <div>Active Satellites: {filteredActiveSatellites.length}</div>
         <div>Available: {availableSatellites.length}</div>
         <div>Selected IDs: {selectedSatelliteIds.join(", ")}</div>
         <div>Following: {selectedSatellite || "None"}</div>
-        {activeSatellites.map((orbit: OrbitResponse, index: number) => {
+        {filteredActiveSatellites.map((orbit: OrbitResponse, index: number) => {
           const pos = getSatelliteCurrentPosition(orbit.satellite_id);
+          // 実際に使用している実高度で表示（APIの値に依存しない）
+          let displayAltitude = orbit.altitude ?? 400;
+          const id = normalizeSatelliteId(orbit.satellite_id);
+          switch (id) {
+            case "himawari8":
+            case "himawari9":
+            case "goes16":
+              displayAltitude = 35786;
+              break;
+            case "terra":
+              displayAltitude = 705;
+              break;
+            case "landsat8":
+              displayAltitude = 705;
+              break;
+            case "worldview3":
+              displayAltitude = 617;
+              break;
+          }
           return (
             <div key={orbit.satellite_id} style={{ fontSize: "10px" }}>
-              {orbit.satellite_id}: {orbit.altitude}km
+              {orbit.satellite_id}: {displayAltitude.toFixed(0)}km
               <br />
               Pos: {pos.lat.toFixed(1)}°, {pos.lng.toFixed(1)}°
             </div>
           );
         })}
-      </div> */}
+      </div>
 
       {/* 衛星情報表示 */}
-      {/* {activeSatellites.length > 0 && ( 
+      {activeSatellites.length > 0 && (
         <div
           style={{
             position: "absolute",
@@ -789,99 +912,95 @@ export function Earth() {
             backdropFilter: "blur(10px)",
           }}
         >
-          <h3 style={{ margin: "0 0 15px 0", color: "#4ecdc4" }}>
+          <h3 style={{ margin: "0 0 4px 0", color: "#4ecdc4" }}>
             🛰️ Active Satellites
           </h3>
-          {activeSatellites.map((orbit: OrbitResponse, index: number) => {
-            // 実際の軌道高度を取得
-            let actualAltitude = orbit.altitude;
-            let orbitalType = "Unknown";
+          {filteredActiveSatellites.map(
+            (orbit: OrbitResponse, index: number) => {
+              let actualAltitude = orbit.altitude ?? 400;
+              let orbitalType = "Unknown";
 
-            switch (orbit.satellite_id) {
-              case "himawari8":
-                actualAltitude = 35786;
-                orbitalType = "Geostationary";
-                break;
-              case "goes16":
-                actualAltitude = 35786;
-                orbitalType = "Geostationary";
-                break;
-              case "terra":
-                actualAltitude = 705;
-                orbitalType = "Polar";
-                break;
-              case "landsat8":
-                actualAltitude = 705;
-                orbitalType = "Polar";
-                break;
-              case "worldview3":
-                actualAltitude = 617;
-                orbitalType = "Low Earth";
-                break;
-            }
+              switch (orbit.satellite_id) {
+                case "himawari8":
+                case "himawari9":
+                  orbitalType = "Geostationary";
+                  break;
+                case "goes16":
+                  orbitalType = "Geostationary";
+                  break;
+                case "terra":
+                  orbitalType = "Polar";
+                  break;
+                case "worldview3":
+                  orbitalType = "Low Earth";
+                  break;
+              }
 
-            return (
-              <div
-                key={orbit.satellite_id}
-                onClick={() => moveCameraToSatellite(orbit.satellite_id)}
-                style={{
-                  marginBottom: "10px",
-                  borderLeft: `3px solid ${getSatelliteColor(index)}`,
-                  paddingLeft: "10px",
-                  backgroundColor:
-                    selectedSatellite === orbit.satellite_id
-                      ? "rgba(255,0,0,0.3)" // 選択時は赤い背景
-                      : "rgba(255,255,255,0.1)",
-                  borderRadius: "4px",
-                  padding: "8px",
-                  cursor: "pointer",
-                  transition: "all 0.3s ease",
-                  transform:
-                    selectedSatellite === orbit.satellite_id
-                      ? "scale(1.05)"
-                      : "scale(1)",
-                  boxShadow:
-                    selectedSatellite === orbit.satellite_id
-                      ? "0 0 10px rgba(255,0,0,0.5)" // 選択時は赤い光
-                      : "none",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor =
-                    "rgba(255,255,255,0.2)";
-                  e.currentTarget.style.transform = "scale(1.02)";
-                  e.currentTarget.style.boxShadow = "0 4px 8px rgba(0,0,0,0.3)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor =
-                    "rgba(255,255,255,0.1)";
-                  e.currentTarget.style.transform = "scale(1)";
-                  e.currentTarget.style.boxShadow = "none";
-                }}
-              >
-                <strong style={{ color: getSatelliteColor(index) }}>
-                  {orbit.satellite_id.toUpperCase()}
-                </strong>
-                <br />
-                <span style={{ fontSize: "11px", opacity: 0.8 }}>
-                  Type: {orbitalType}
+              return (
+                <div
+                  key={orbit.satellite_id}
+                  onClick={() => moveCameraToSatellite(orbit.satellite_id)}
+                  style={{
+                    marginBottom: "10px",
+                    borderLeft: `3px solid ${getSatelliteColor(index)}`,
+                    paddingLeft: "10px",
+                    backgroundColor:
+                      normalizeSatelliteId(selectedSatellite || "") ===
+                      normalizeSatelliteId(orbit.satellite_id)
+                        ? "rgba(255,0,0,0.3)" // 選択時は赤い背景
+                        : "rgba(255,255,255,0.1)",
+                    borderRadius: "4px",
+                    padding: "8px",
+                    cursor: "pointer",
+                    transition: "all 0.3s ease",
+                    transform:
+                      normalizeSatelliteId(selectedSatellite || "") ===
+                      normalizeSatelliteId(orbit.satellite_id)
+                        ? "scale(1.05)"
+                        : "scale(1)",
+                    boxShadow:
+                      normalizeSatelliteId(selectedSatellite || "") ===
+                      normalizeSatelliteId(orbit.satellite_id)
+                        ? "0 0 10px rgba(255,0,0,0.5)" // 選択時は赤い光
+                        : "none",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor =
+                      "rgba(255,255,255,0.2)";
+                    e.currentTarget.style.transform = "scale(1.02)";
+                    e.currentTarget.style.boxShadow =
+                      "0 4px 8px rgba(0,0,0,0.3)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor =
+                      "rgba(255,255,255,0.1)";
+                    e.currentTarget.style.transform = "scale(1)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                >
+                  <strong style={{ color: getSatelliteColor(index) }}>
+                    {orbit.satellite_id.toUpperCase()}
+                  </strong>
                   <br />
-                  Altitude: {actualAltitude.toFixed(0)} km
-                  <br />
-                  Speed: {orbit.orbital_speed.toFixed(2)} km/s
-                  <br />
-                  <span
-                    style={{
-                      fontSize: "10px",
-                      opacity: 0.6,
-                      fontStyle: "italic",
-                    }}
-                  >
-                    Click to view
+                  <span style={{ fontSize: "11px", opacity: 0.8 }}>
+                    Type: {orbitalType}
+                    <br />
+                    Altitude: {(actualAltitude ?? 0).toFixed(0)} km
+                    <br />
+                    Speed: {(orbit.orbital_speed ?? 0).toFixed(2)} km/s
+                    <br />
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        opacity: 0.6,
+                        fontStyle: "italic",
+                      }}
+                    ></span>
                   </span>
-                </span>
-              </div>
-            );
-          })}
+                </div>
+              );
+            }
+          )}
           <div
             style={{
               fontSize: "10px",
@@ -929,7 +1048,130 @@ export function Earth() {
             Reset Camera View
           </button>
         </div>
-      )} */}
+      )}
+
+      {/* カメラ姿勢コントロール（ヨー・ピッチ・ロール） */}
+      {/* <div
+        style={{
+          position: "absolute",
+          bottom: "10px",
+          left: "10px",
+          color: "white",
+          backgroundColor: "rgba(0,0,0,0.7)",
+          padding: "12px",
+          borderRadius: "8px",
+          fontSize: "12px",
+          display: "grid",
+          gridTemplateColumns: "auto auto auto",
+          gap: "6px 8px",
+          alignItems: "center",
+        }}
+      >
+        <div
+          style={{
+            gridColumn: "1 / -1",
+            color: "#4ecdc4",
+            marginBottom: "4px",
+          }}
+        >
+          Camera Orientation
+        </div>
+        <div style={{ opacity: 0.8 }}>Yaw</div>
+        <button
+          onClick={() => rotateYaw(5)}
+          style={{
+            padding: "6px 8px",
+            cursor: "pointer",
+            background: "#1f2937",
+            color: "#fff",
+            border: "1px solid #374151",
+            borderRadius: "4px",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "#374151")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "#1f2937")}
+        >
+          +
+        </button>
+        <button
+          onClick={() => rotateYaw(-5)}
+          style={{
+            padding: "6px 8px",
+            cursor: "pointer",
+            background: "#1f2937",
+            color: "#fff",
+            border: "1px solid #374151",
+            borderRadius: "4px",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "#374151")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "#1f2937")}
+        >
+          -
+        </button>
+
+        <div style={{ opacity: 0.8 }}>Pitch</div>
+        <button
+          onClick={() => rotatePitch(5)}
+          style={{
+            padding: "6px 8px",
+            cursor: "pointer",
+            background: "#1f2937",
+            color: "#fff",
+            border: "1px solid #374151",
+            borderRadius: "4px",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "#374151")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "#1f2937")}
+        >
+          +
+        </button>
+        <button
+          onClick={() => rotatePitch(-5)}
+          style={{
+            padding: "6px 8px",
+            cursor: "pointer",
+            background: "#1f2937",
+            color: "#fff",
+            border: "1px solid #374151",
+            borderRadius: "4px",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "#374151")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "#1f2937")}
+        >
+          -
+        </button>
+
+        <div style={{ opacity: 0.8 }}>Roll</div>
+        <button
+          onClick={() => rotateRoll(5)}
+          style={{
+            padding: "6px 8px",
+            cursor: "pointer",
+            background: "#1f2937",
+            color: "#fff",
+            border: "1px solid #374151",
+            borderRadius: "4px",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "#374151")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "#1f2937")}
+        >
+          +
+        </button>
+        <button
+          onClick={() => rotateRoll(-5)}
+          style={{
+            padding: "6px 8px",
+            cursor: "pointer",
+            background: "#1f2937",
+            color: "#fff",
+            border: "1px solid #374151",
+            borderRadius: "4px",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "#374151")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "#1f2937")}
+        >
+          -
+        </button>
+      </div> */}
     </div>
   );
 }

@@ -125,7 +125,7 @@ export default function GroundStationChat({
 
   return (
     <div
-      className={`flex flex-col rounded-xl text-white backdrop-blur p-3 w-[33svw] h-[80svh] overflow-hidden ${
+      className={`flex flex-col rounded-xl text-white backdrop-blur p-3 w-[66svw] h-[80svh] overflow-hidden ${
         className ?? ""
       }`}
     >

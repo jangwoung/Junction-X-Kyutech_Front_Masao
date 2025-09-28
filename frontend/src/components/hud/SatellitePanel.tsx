@@ -126,15 +126,33 @@ export default function SatellitePanel() {
   useEffect(() => {
     const controller = new AbortController();
     const base = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+    const useMockOnly = process.env.NEXT_PUBLIC_DEBRIS_USE_MOCK === "true";
 
     mountedRef.current = true;
     setDebrisLoading(true);
+
+    // 環境変数で完全モード切替（404ノイズ回避用）
+    if (useMockOnly) {
+      const mock = generateMockDebrisData();
+      if (mountedRef.current) {
+        setDebris(mock);
+        setDebrisLoading(false);
+      }
+      return () => {
+        controller.abort();
+        mountedRef.current = false;
+      };
+    }
 
     fetch(`${base}/api/v1/mission/debris/demo/threats`, {
       signal: controller.signal,
     })
       .then(async (res) => {
         if (!res.ok) {
+          // 404 はモックへフォールバックさせるため、例外にしない
+          if (res.status === 404) {
+            return { threats: [] };
+          }
           throw new Error(`HTTP ${res.status}: ${res.statusText}`);
         }
         return res.json();
@@ -159,7 +177,11 @@ export default function SatellitePanel() {
         if (err.name === "AbortError") {
           return;
         }
-        console.error("デブリデータ取得エラー:", err);
+        // ネットワーク/サーバー異常時はモックへフォールバック
+        console.warn(
+          "デブリデータ取得エラー。モックにフォールバックします:",
+          err
+        );
 
         if (mountedRef.current) {
           setDebris(generateMockDebrisData());

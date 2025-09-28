@@ -18,7 +18,7 @@ export function DebrisLayer({ missionId = "demo" }: DebrisLayerProps) {
 
   useEffect(() => {
     const controller = new AbortController();
-    const base = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+    const base = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
 
     mountedRef.current = true;
     setLoading(true);

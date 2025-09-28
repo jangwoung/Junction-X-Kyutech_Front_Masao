@@ -6,7 +6,7 @@ export default function NavigationButtons() {
   return (
     <div className="flex gap-2">
       <Link
-        href="/"
+        href="/camera"
         className="px-4 py-2 text-white text-[10px] font-medium rounded border border-white-500/30"
       >
         Camera
