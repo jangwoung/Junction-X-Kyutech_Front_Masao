@@ -7,7 +7,7 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import * as THREE from "three";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { CameraTracker, CameraDisplay } from "./CameraInfo";
+//import { CameraTracker, CameraDisplay } from "./CameraInfo";
 import { AutoObjectSpawner } from "./AutoObjectSpawner";
 import { ArrowKeyUI } from "./ArrowKeyUI";
 import { HorizontalOrbitCamera, VerticalOrbitCamera } from "./CameraScript";
@@ -58,9 +58,9 @@ function Earth() {
 
 // メインのシーンコンポーネント
 export default function GameScene() {
-  const [camPos, setCamPos] = useState(new THREE.Vector3());
-  const [camRot, setCamRot] = useState(new THREE.Euler());
-  const [hasMounted, setHasMounted] = useState(false);
+  //const [camPos, setCamPos] = useState(new THREE.Vector3());
+  //const [camRot, setCamRot] = useState(new THREE.Euler());
+  //const [hasMounted, setHasMounted] = useState(false);
   const controlsRef = useRef<OrbitControlsImpl>(null!);
 
   const [rotationMode, setRotationMode] = useState<'horizontal' | 'vertical'>('horizontal');
@@ -70,7 +70,7 @@ export default function GameScene() {
   const [radius, setRadius] = useState(5); 
 
   useEffect(() => {
-    setHasMounted(true);
+    //setHasMounted(true);
   }, []);
 
     // 回転モードを切り替える関数
@@ -176,11 +176,11 @@ export default function GameScene() {
             />
           )}
 
-          <CameraTracker setPosition={setCamPos} setRotation={setCamRot} />
+          {/*  <CameraTracker setPosition={setCamPos} setRotation={setCamRot} /> */}
         </Canvas>
       </ErrorBoundary>
 
-      {hasMounted && <CameraDisplay position={camPos} rotation={camRot} />}
+      {/*hasMounted (&& <CameraDisplay position={camPos} rotation={camRot} />*/}
     </div>
   );
 }
